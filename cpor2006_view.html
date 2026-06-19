@@ -32,7 +32,7 @@ textarea:focus{outline:none;border-color:#888}
 .feedback.success{background:#dcfce7;color:#166534}
 .feedback.error{background:#fee2e2;color:#991b1b}
 .feedback.loading{background:#f0f9ff;color:#0369a1;display:block}
-.sum-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:1.25rem}
+.sum-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1.25rem}
 .sum-card{background:#fff;border-radius:8px;padding:6px 6px;border:1px solid #e8e8e8;min-width:0}
 .sum-card .lbl{font-size:8px;color:#888;text-transform:uppercase;letter-spacing:.2px;margin-bottom:2px;white-space:nowrap}
 .sum-card .val{font-size:13px;font-weight:600;white-space:nowrap}
@@ -228,11 +228,10 @@ function renderSumCards(id) {
   const quit = state.pessoas.filter(p => p.pago>=COTA).length;
   const parc = state.pessoas.filter(p => p.pago>0 && p.pago<COTA).length;
   el.innerHTML = `
-    updateSaldoTotal();
     <div class="sum-card"><div class="lbl">Confirmados</div><div class="val green">${quit+parc}</div></div>
     <div class="sum-card"><div class="lbl">Quitados</div><div class="val green">${quit}</div></div>
-    <div class="sum-card"><div class="lbl">Parciais</div><div class="val amber">${parc}</div></div>
-    <div class="sum-card"><div class="lbl">Arrecadado</div><div class="val green">${fmtBRL(arr)}</div></div>`;
+    <div class="sum-card"><div class="lbl">Parciais</div><div class="val amber">${parc}</div></div>`;
+  updateSaldoTotal();
 }
 
 function renderCursos() {
