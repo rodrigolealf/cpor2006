@@ -438,8 +438,10 @@ async function updateCusto(idx, campo, valor) {
   await supaFetch('custos', 'PATCH', {[campo]: valor}, `?id=eq.${c.id}`);
 }
 
-function addCostItem() {
-  state.custos.push({nome:'Novo item', qtd:0, unit:0, pago:0});
+async function addCostItem() {
+  const res = await supaFetch('custos', 'POST', {nome:'Novo item', qtd:0, unit:0, pago:0});
+  if (res && res[0]) state.custos.push(res[0]);
+  else state.custos.push({nome:'Novo item', qtd:0, unit:0, pago:0});
   renderCustos();
 }
 
