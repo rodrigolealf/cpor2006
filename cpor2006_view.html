@@ -245,6 +245,7 @@ function renderReceb() {
   document.getElementById('receb-totais').innerHTML = `
     <div class="receb-total-card"><div class="lbl">Arrecadado</div><div class="val green">${fmtBRL(arr)}</div></div>
     <div class="receb-total-card"><div class="lbl">Falta</div><div class="val amber">${fmtBRL(Math.max(0,(quit+parc)*COTA-arr))}</div></div>
+    <div class="receb-total-card"><div class="lbl">Total previsto</div><div class="val green">${fmtBRL((quit+parc)*COTA)}</div></div>
     <div class="receb-total-card"><div class="lbl">Quitados</div><div class="val green">${quit}</div></div>
     <div class="receb-total-card"><div class="lbl">Parciais</div><div class="val amber">${parc}</div></div>
     <div class="receb-total-card"><div class="lbl">Pendentes</div><div class="val" style="color:#aaa">${pend}</div></div>`;
