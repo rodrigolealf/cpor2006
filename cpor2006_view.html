@@ -81,6 +81,11 @@ textarea:focus{outline:none;border-color:#888}
 .vsection{display:none}.vsection.active{display:block}
 .sect-label{font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
 .loading{text-align:center;padding:2rem;color:#888;font-size:13px}
+.saldo-anterior{background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:10px 14px;margin-bottom:1.25rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+.saldo-anterior .item{text-align:center;flex:1;min-width:80px}
+.saldo-anterior .item .lbl{font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.3px;margin-bottom:2px}
+.saldo-anterior .item .val{font-size:13px;font-weight:600}
+.saldo-anterior .divider{width:1px;background:#e0e0e0;height:30px}
 </style>
 </head>
 <body>
@@ -93,6 +98,13 @@ textarea:focus{outline:none;border-color:#888}
     </div>
   </div>
   <div class="sum-cards" id="sum-view"></div>
+  <div class="saldo-anterior">
+    <div class="item"><div class="lbl">Sobra 2025</div><div class="val" style="color:#16a34a">R$ 952</div></div>
+    <div class="divider"></div>
+    <div class="item"><div class="lbl">Arrecadado 2026</div><div class="val green" id="arrecadado-inline">R$ 0</div></div>
+    <div class="divider"></div>
+    <div class="item"><div class="lbl">Saldo total</div><div class="val green" id="saldo-total">R$ 952</div></div>
+  </div>
   <div class="view-tabs">
     <button class="vtab active" onclick="switchTab('cursos',this)">Por curso</button>
     <button class="vtab" onclick="switchTab('receb',this)">Recebimentos</button>
@@ -197,12 +209,26 @@ function switchTab(t, btn) {
   renderView();
 }
 
+function updateSaldoTotal() {
+  const arr = totalArr();
+  const SOBRA = 952;
+  const total = arr + SOBRA;
+  const fmtd = fmtBRL(total);
+  const fmtArr = fmtBRL(arr);
+  ['arrecadado-inline','arrecadado-inline-admin'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.textContent = fmtArr;
+  });
+  ['saldo-total','saldo-total-admin'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.textContent = fmtd;
+  });
+}
 function renderSumCards(id) {
   const el = document.getElementById(id); if (!el) return;
   const arr = totalArr(), custo = totalCusto(), saldo = arr - custo;
   const quit = state.pessoas.filter(p => p.pago>=COTA).length;
   const parc = state.pessoas.filter(p => p.pago>0 && p.pago<COTA).length;
   el.innerHTML = `
+    updateSaldoTotal();
     <div class="sum-card"><div class="lbl">Confirmados</div><div class="val green">${quit+parc}</div></div>
     <div class="sum-card"><div class="lbl">Quitados</div><div class="val green">${quit}</div></div>
     <div class="sum-card"><div class="lbl">Parciais</div><div class="val amber">${parc}</div></div>
