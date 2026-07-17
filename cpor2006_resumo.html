@@ -114,23 +114,15 @@ async function gerarImagem() {
   try {
     const canvas = await captureCanvas();
     const imgData = canvas.toDataURL('image/png');
-    // Tenta Web Share API primeiro (iPhone)
-    if (navigator.share && navigator.canShare) {
-      const blob = await (await fetch(imgData)).blob();
-      const file = new File([blob], 'cpor2006_confirmados.png', {type:'image/png'});
-      if (navigator.canShare({files:[file]})) {
-        await navigator.share({files:[file], title:'Churrasco CPOR 2006 — Confirmados'});
-        return;
-      }
-    }
-    // Fallback: download
     const link = document.createElement('a');
     link.download = 'cpor2006_confirmados.png';
     link.href = imgData;
+    document.body.appendChild(link);
     link.click();
+    document.body.removeChild(link);
   } catch(e) {
     console.error(e);
-    alert('Erro ao gerar imagem.');
+    alert('Erro ao gerar imagem: ' + e.message);
   } finally {
     hideOverlay();
   }
@@ -140,43 +132,13 @@ async function gerarPDF() {
   showOverlay('📄 Gerando PDF...');
   try {
     const canvas = await captureCanvas();
-    const imgData = canvas.toDataURL('image/jpeg', 0.95);
+    const imgData = canvas.toDataURL('image/jpeg', 0.92);
     const { jsPDF } = window.jspdf;
-    
-    const imgW = canvas.width;
-    const imgH = canvas.height;
-    
-    // A4 em pontos: 595 x 842
     const pdfW = 595;
-    const ratio = pdfW / imgW;
-    const pdfH = imgH * ratio;
-    
-    // Cria PDF com altura real da página (pode ser maior que A4)
-    const pdf = new jsPDF({
-      orientation: pdfH > pdfW ? 'portrait' : 'landscape',
-      unit: 'pt',
-      format: [pdfW, pdfH]
-    });
-    
+    const pdfH = Math.round(canvas.height * pdfW / canvas.width);
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: [pdfW, pdfH] });
     pdf.addImage(imgData, 'JPEG', 0, 0, pdfW, pdfH);
-    
-    const pdfBlob = pdf.output('blob');
-    
-    // Tenta Web Share API (iPhone)
-    if (navigator.share && navigator.canShare) {
-      const file = new File([pdfBlob], 'cpor2006_confirmados.pdf', {type:'application/pdf'});
-      if (navigator.canShare({files:[file]})) {
-        await navigator.share({files:[file], title:'Churrasco CPOR 2006 — Confirmados'});
-        return;
-      }
-    }
-    // Fallback: download direto
-    const url = URL.createObjectURL(pdfBlob);
-    const link = document.createElement('a');
-    link.download = 'cpor2006_confirmados.pdf';
-    link.href = url;
-    link.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    pdf.save('cpor2006_confirmados.pdf');
   } catch(e) {
     console.error(e);
     alert('Erro ao gerar PDF: ' + e.message);
