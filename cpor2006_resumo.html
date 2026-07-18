@@ -47,11 +47,11 @@
   .cbody { padding: 5px 12px 5px; }
   .conf { display: flex; flex-wrap: wrap; gap: 3px 16px; padding-bottom: 3px; border-bottom: 0.5px dashed #e0ddd3; min-height: 3px; }
   .conf span { font-size: 11.5px; color: #1a2332; font-weight: 600; display: flex; align-items: center; gap: 5px; white-space: nowrap; }
-  .dot-q { width: 7px; height: 7px; border-radius: 50%; background: #2d7a3f; box-shadow: 0 0 0 1.2px rgba(45,122,63,0.18); flex-shrink:0; }
-  .dot-p { width: 7px; height: 7px; border-radius: 50%; background: #c4841a; box-shadow: 0 0 0 1.2px rgba(196,132,26,0.18); flex-shrink:0; }
-  .pend { display: flex; flex-wrap: wrap; padding-top: 4px; }
-  .pend span { font-size: 9.6px; color: #a8a89f; display: flex; align-items: center; gap: 3px; white-space: nowrap; line-height: 1.7; width: 16.6%; box-sizing: border-box; padding-right: 2px; overflow: hidden; text-overflow: ellipsis; }
-  .dot-x { width: 5px; height: 5px; border-radius: 50%; border: 1px solid #d8d5cc; flex-shrink: 0; }
+  .dot-q { display: inline-block; width: 7px; height: 7px; min-width: 7px; min-height: 7px; max-width: 7px; max-height: 7px; font-size: 0; line-height: 0; vertical-align: middle; border-radius: 50%; background: #2d7a3f; box-shadow: 0 0 0 1.2px rgba(45,122,63,0.18); flex-shrink: 0; flex-grow: 0; }
+  .dot-p { display: inline-block; width: 7px; height: 7px; min-width: 7px; min-height: 7px; max-width: 7px; max-height: 7px; font-size: 0; line-height: 0; vertical-align: middle; border-radius: 50%; background: #c4841a; box-shadow: 0 0 0 1.2px rgba(196,132,26,0.18); flex-shrink: 0; flex-grow: 0; }
+  .pend { display: flex; flex-wrap: wrap; gap: 3px 16px; padding-top: 4px; }
+  .pend span { font-size: 9.6px; color: #a8a89f; display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+  .dot-x { display: inline-block; width: 7px; height: 7px; min-width: 7px; min-height: 7px; max-width: 7px; max-height: 7px; font-size: 0; line-height: 0; vertical-align: middle; border-radius: 50%; background: #d64545; flex-shrink: 0; flex-grow: 0; }
 
   .leg { margin-top: 6px; padding: 3px 0; display: flex; justify-content: center; gap: 18px; font-size: 10.5px; color: #6a6a63; break-inside: avoid; }
   .leg span { display: flex; align-items: center; gap: 4px; }
@@ -84,8 +84,8 @@
 
   <div class="cards">
     <div class="card c1"><div class="lbl">CONFIRMADOS</div><div class="num">26</div><div class="foot">de 149 combatentes</div></div>
-    <div class="card c2"><div class="lbl">QUITADOS</div><div class="num">18</div><div class="foot">Cota completa</div></div>
-    <div class="card c3"><div class="lbl">PARCIAIS</div><div class="num">8</div><div class="foot">Em andamento</div></div>
+    <div class="card c2"><div class="lbl">QUITADOS</div><div class="num">21</div><div class="foot">Cota completa</div></div>
+    <div class="card c3"><div class="lbl">PARCIAIS</div><div class="num">5</div><div class="foot">Em andamento</div></div>
     <div class="card c4"><div class="lbl">PENDENTES</div><div class="num">123</div><div class="foot">Aguardando</div></div>
   </div>
 
@@ -119,7 +119,7 @@
     <div class="cstats"><span class="n1">2</span><span class="n2"> / 30</span><span class="pct" style="background:#3d6d8a">7%</span></div>
   </div>
   <div class="cbody">
-    <div class="conf"><span><span class="dot-q"></span>GONZALEZ</span><span><span class="dot-p"></span>HELÓISO</span></div>
+    <div class="conf"><span><span class="dot-q"></span>GONZALEZ</span><span><span class="dot-q"></span>HELÓISO</span></div>
     <div class="pend"><span><span class="dot-x"></span>ALVES</span><span><span class="dot-x"></span>ARAÚJO</span><span><span class="dot-x"></span>BORGES</span><span><span class="dot-x"></span>BRITO</span><span><span class="dot-x"></span>CASTELO</span><span><span class="dot-x"></span>COSTA</span><span><span class="dot-x"></span>COSTA PEREIRA</span><span><span class="dot-x"></span>DURÃES</span><span><span class="dot-x"></span>GERALDO</span><span><span class="dot-x"></span>GIULIANO</span><span><span class="dot-x"></span>GREGORIO</span><span><span class="dot-x"></span>GUERRA</span><span><span class="dot-x"></span>HUGO</span><span><span class="dot-x"></span>JOÃO</span><span><span class="dot-x"></span>LEONARDO</span><span><span class="dot-x"></span>MAGNUM</span><span><span class="dot-x"></span>MENDES</span><span><span class="dot-x"></span>MIQUELLI</span><span><span class="dot-x"></span>MORAIS</span><span><span class="dot-x"></span>NOGUEIRA</span><span><span class="dot-x"></span>PEDRO</span><span><span class="dot-x"></span>RAFAEL</span><span><span class="dot-x"></span>ROCHA</span><span><span class="dot-x"></span>SILVEIRA</span><span><span class="dot-x"></span>UBIRATAN</span><span><span class="dot-x"></span>VASCONCELOS</span><span><span class="dot-x"></span>VICTOR</span><span><span class="dot-x"></span>VIEIRA</span></div>
   </div>
 </div><div class="course" style="border-left-color:#b8892e">
@@ -130,7 +130,7 @@
     <div class="cstats"><span class="n1">7</span><span class="n2"> / 30</span><span class="pct" style="background:#b8892e">23%</span></div>
   </div>
   <div class="cbody">
-    <div class="conf"><span><span class="dot-q"></span>ARRIBAS</span><span><span class="dot-q"></span>LUCIANO</span><span><span class="dot-q"></span>AUGUSTO</span><span><span class="dot-q"></span>FERREIRA SILVA</span><span><span class="dot-q"></span>VITAL</span><span><span class="dot-p"></span>KLEBER</span><span><span class="dot-p"></span>DINIZ</span></div>
+    <div class="conf"><span><span class="dot-q"></span>ARRIBAS</span><span><span class="dot-q"></span>LUCIANO</span><span><span class="dot-q"></span>AUGUSTO</span><span><span class="dot-q"></span>FERREIRA SILVA</span><span><span class="dot-q"></span>VITAL</span><span><span class="dot-q"></span>KLEBER</span><span><span class="dot-p"></span>DINIZ</span></div>
     <div class="pend"><span><span class="dot-x"></span>ALBERTO</span><span><span class="dot-x"></span>BARRETO</span><span><span class="dot-x"></span>BARROS</span><span><span class="dot-x"></span>BEZERRA</span><span><span class="dot-x"></span>BRANDÃO</span><span><span class="dot-x"></span>CARVALHO</span><span><span class="dot-x"></span>CORDEIRO</span><span><span class="dot-x"></span>FITTIPALDI</span><span><span class="dot-x"></span>FREIRE</span><span><span class="dot-x"></span>GALINDO</span><span><span class="dot-x"></span>GUIMARÃES</span><span><span class="dot-x"></span>LOPES</span><span><span class="dot-x"></span>LUCAS</span><span><span class="dot-x"></span>MACIEL</span><span><span class="dot-x"></span>MARCOS</span><span><span class="dot-x"></span>MARQUES</span><span><span class="dot-x"></span>MONTEIRO</span><span><span class="dot-x"></span>PINHO</span><span><span class="dot-x"></span>RABELO</span><span><span class="dot-x"></span>RODRIGUES</span><span><span class="dot-x"></span>SANDRO</span><span><span class="dot-x"></span>SOARES</span><span><span class="dot-x"></span>VALVERDE</span></div>
   </div>
 </div><div class="course" style="border-left-color:#4a5f9d">
@@ -152,7 +152,7 @@
     <div class="cstats"><span class="n1">8</span><span class="n2"> / 30</span><span class="pct" style="background:#6b6b6b">27%</span></div>
   </div>
   <div class="cbody">
-    <div class="conf"><span><span class="dot-q"></span>FRANCISCO</span><span><span class="dot-q"></span>LEAL</span><span><span class="dot-q"></span>MIRANDA</span><span><span class="dot-q"></span>NOVAES</span><span><span class="dot-q"></span>SANTOS</span><span><span class="dot-q"></span>BHREMER</span><span><span class="dot-p"></span>PONTUAL</span><span><span class="dot-p"></span>VITA</span></div>
+    <div class="conf"><span><span class="dot-q"></span>FRANCISCO</span><span><span class="dot-q"></span>LEAL</span><span><span class="dot-q"></span>MIRANDA</span><span><span class="dot-q"></span>NOVAES</span><span><span class="dot-q"></span>SANTOS</span><span><span class="dot-q"></span>PONTUAL</span><span><span class="dot-q"></span>VITA</span><span><span class="dot-p"></span>BHREMER</span></div>
     <div class="pend"><span><span class="dot-x"></span>ALCANTARA</span><span><span class="dot-x"></span>ALEX</span><span><span class="dot-x"></span>ARTHUR</span><span><span class="dot-x"></span>BRUNO</span><span><span class="dot-x"></span>CLEITON</span><span><span class="dot-x"></span>COIMBRA</span><span><span class="dot-x"></span>EDUARDO</span><span><span class="dot-x"></span>FEITOSA</span><span><span class="dot-x"></span>FREITAS</span><span><span class="dot-x"></span>GEORGE</span><span><span class="dot-x"></span>GONDIM</span><span><span class="dot-x"></span>GUSMÃO</span><span><span class="dot-x"></span>JAILSON</span><span><span class="dot-x"></span>LOURENÇO</span><span><span class="dot-x"></span>MONTENEGRO</span><span><span class="dot-x"></span>PASSOS</span><span><span class="dot-x"></span>PERRUCI</span><span><span class="dot-x"></span>SAMPAIO</span><span><span class="dot-x"></span>SÉRGIO</span><span><span class="dot-x"></span>SOUZA</span><span><span class="dot-x"></span>SPÓSITO</span><span><span class="dot-x"></span>THIAGO</span></div>
   </div>
 </div>
