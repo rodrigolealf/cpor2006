@@ -222,7 +222,7 @@ async function supaFetch(table, method='GET', body=null, filter='') {
 
 async function loadData() {
   const [pessoas, custos] = await Promise.all([
-    supaFetch('pessoas', 'GET', null, '?order=nome&select=id,nome,curso,pago,data_pagamento'),
+    supaFetch('pessoas', 'GET', null, '?order=nome'),
     supaFetch('custos', 'GET', null, '?order=id')
   ]);
   state.pessoas = pessoas || [];
