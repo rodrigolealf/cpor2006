@@ -221,12 +221,18 @@ async function supaFetch(table, method='GET', body=null, filter='') {
 }
 
 async function loadData() {
-  const [pessoas, custos] = await Promise.all([
-    supaFetch('pessoas', 'GET', null, '?order=nome'),
-    supaFetch('custos', 'GET', null, '?order=id')
-  ]);
-  state.pessoas = pessoas || [];
-  state.custos  = custos  || [];
+  try {
+    const [pessoas, custos] = await Promise.all([
+      supaFetch('pessoas', 'GET', null, '?order=nome'),
+      supaFetch('custos', 'GET', null, '?order=id')
+    ]);
+    state.pessoas = pessoas || [];
+    state.custos  = custos  || [];
+  } catch(e) {
+    const m = document.getElementById('loading-msg');
+    if (m) { m.textContent = 'Erro ao carregar: ' + e.message; m.style.color='#dc2626'; }
+    console.error('loadData error:', e);
+  }
   renderAll();
 }
 
@@ -314,13 +320,15 @@ function renderReceb() {
     <div class="receb-total-card"><div class="lbl">Quitados</div><div class="val green">${quit}</div></div>
     <div class="receb-total-card"><div class="lbl">Parciais</div><div class="val amber">${parc}</div></div>
     <div class="receb-total-card"><div class="lbl">Pendentes</div><div class="val" style="color:#aaa">${pend}</div></div>`;
-  // Ordena: quem pagou primeiro por data desc, depois parciais, depois pendentes
-  const comData = state.pessoas.filter(p=>p.pago>0&&p.data_pagamento).sort((a,b)=>{
-    const [da,ma,aa]=a.data_pagamento.split('/').map(Number);
-    const [db,mb,ab]=b.data_pagamento.split('/').map(Number);
-    return new Date(ab,mb-1,db) - new Date(aa,ma-1,da); // mais recente primeiro
+  // Ordena: pagantes com data (mais recente primeiro), pagantes sem data, pendentes
+  const comData = state.pessoas.filter(p=>p.pago>0 && p.data_pagamento).sort((a,b)=>{
+    try {
+      const [da,ma,ya]=a.data_pagamento.split('/').map(Number);
+      const [db,mb,yb]=b.data_pagamento.split('/').map(Number);
+      return new Date(yb,mb-1,db) - new Date(ya,ma-1,da);
+    } catch(e) { return 0; }
   });
-  const semData = state.pessoas.filter(p=>p.pago>0&&!p.data_pagamento);
+  const semData = state.pessoas.filter(p=>p.pago>0 && !p.data_pagamento);
   const pend    = state.pessoas.filter(p=>p.pago===0);
   const sorted  = [...comData,...semData,...pend];
   document.getElementById('receb-body').innerHTML = sorted.map((p,i) => {
@@ -469,9 +477,11 @@ async function delCost(i) {
 }
 
 async function updateDataPagamento(id, data) {
-  const p = state.pessoas.find(x => x.id === id);
-  if (p) p.data_pagamento = data;
-  await supaFetch('pessoas', 'PATCH', {data_pagamento: data}, `?id=eq.${id}`);
+  try {
+    const p = state.pessoas.find(x => x.id === id);
+    if (p) p.data_pagamento = data;
+    await supaFetch('pessoas', 'PATCH', {data_pagamento: data}, `?id=eq.${id}`);
+  } catch(e) { console.error('updateData error:', e); }
 }
 
 function renderAdmin() { renderSumCards('sum-admin'); renderCustos(); }
