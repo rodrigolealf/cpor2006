@@ -329,8 +329,8 @@ function renderReceb() {
     } catch(e) { return 0; }
   });
   const semData = state.pessoas.filter(p=>p.pago>0 && !p.data_pagamento);
-  const pend    = state.pessoas.filter(p=>p.pago===0);
-  const sorted  = [...comData,...semData,...pend];
+  const pendLista = state.pessoas.filter(p=>p.pago===0);
+  const sorted  = [...comData,...semData,...pendLista];
   document.getElementById('receb-body').innerHTML = sorted.map((p,i) => {
     const falta = Math.max(0, COTA-p.pago);
     const pct   = Math.min(100, Math.round(p.pago/COTA*100));
