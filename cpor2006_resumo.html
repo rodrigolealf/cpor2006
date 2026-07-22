@@ -194,17 +194,35 @@ function render(pessoas) {
 
 async function capturar() {
   const pagina = document.getElementById('pagina');
-  window.scrollTo(0,0);
-  return await html2canvas(pagina, {
-    scale: 2,
-    useCORS: true,
-    backgroundColor: '#f4f4f2',
-    windowWidth: 794,
-    width: pagina.scrollWidth,
-    height: pagina.scrollHeight,
-    scrollY: 0,
-    scrollX: 0
-  });
+  const viewportMeta = document.querySelector('meta[name="viewport"]');
+  const originalViewport = viewportMeta ? viewportMeta.getAttribute('content') : null;
+
+  // Fix iOS Safari: html2canvas usa a viewport do celular e corta a captura.
+  // Forçamos a viewport pra largura real da página antes de capturar.
+  try {
+    if (viewportMeta) viewportMeta.setAttribute('content', 'width=794, initial-scale=1.0');
+    window.scrollTo(0, 0);
+    await new Promise(r => setTimeout(r, 100));
+
+    const canvas = await html2canvas(pagina, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#f4f4f2',
+      windowWidth: 794,
+      width: pagina.scrollWidth,
+      height: pagina.scrollHeight,
+      x: 0,
+      y: 0,
+      scrollY: 0,
+      scrollX: 0
+    });
+
+    return canvas;
+  } finally {
+    if (viewportMeta && originalViewport) {
+      viewportMeta.setAttribute('content', originalViewport);
+    }
+  }
 }
 
 async function salvarImagem() {
