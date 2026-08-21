@@ -470,40 +470,39 @@ function renderCustos() {
 
   const resumo = document.getElementById('custos-resumo');
   if (resumo) {
-    resumo.innerHTML = \`
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">
-      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 14px">
-        <div style="font-size:9px;color:#16a34a;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Arrecadado 2026</div>
-        <div style="font-size:18px;font-weight:700;color:#16a34a">\${fmtBRL(arrecadado)}</div>
-      </div>
-      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 14px">
-        <div style="font-size:9px;color:#16a34a;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Sobra 2025</div>
-        <div style="font-size:18px;font-weight:700;color:#16a34a">\${fmtBRL(sobra2025)}</div>
-      </div>
-      <div style="background:#f5f5f5;border:1px solid #e0e0e0;border-radius:8px;padding:10px 14px">
-        <div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Total custo previsto</div>
-        <div style="font-size:18px;font-weight:700;color:#111">\${fmtBRL(totalPrevisto)}</div>
-      </div>
-      <div style="background:#f5f5f5;border:1px solid #e0e0e0;border-radius:8px;padding:10px 14px">
-        <div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Já pago em custos</div>
-        <div style="font-size:18px;font-weight:700;color:#d97706">\${fmtBRL(totalPago)}</div>
-      </div>
-      <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 14px">
-        <div style="font-size:9px;color:#dc2626;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Restante a pagar (custos)</div>
-        <div style="font-size:18px;font-weight:700;color:#dc2626">\${fmtBRL(totalRestCustos)}</div>
-      </div>
-      <div style="background:\${saldoFinal>=0?'#f0fdf4':'#fef2f2'};border:1px solid \${saldoFinal>=0?'#bbf7d0':'#fecaca'};border-radius:8px;padding:10px 14px">
-        <div style="font-size:9px;color:\${saldoFinal>=0?'#16a34a':'#dc2626'};text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Saldo disponível agora</div>
-        <div style="font-size:18px;font-weight:700;color:\${saldoFinal>=0?'#16a34a':'#dc2626'}">\${fmtBRL(saldoFinal)}</div>
-        <div style="font-size:9px;color:#888;margin-top:2px">(arrecadado + sobra - pago)</div>
-      </div>
-    </div>
-    <div style="background:\${saldoPrevisto>=0?'#f0fdf4':'#fef2f2'};border:1px solid \${saldoPrevisto>=0?'#bbf7d0':'#fecaca'};border-radius:8px;padding:10px 14px;margin-top:8px">
-      <div style="font-size:9px;color:\${saldoPrevisto>=0?'#16a34a':'#dc2626'};text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Saldo previsto (após pagar tudo)</div>
-      <div style="font-size:20px;font-weight:700;color:\${saldoPrevisto>=0?'#16a34a':'#dc2626'}">\${fmtBRL(saldoPrevisto)}</div>
-      <div style="font-size:9px;color:#888;margin-top:2px">(arrecadado + sobra − custo total previsto)</div>
-    </div>
-    \`;
+    const corSaldoDisp = saldoFinal >= 0 ? '#16a34a' : '#dc2626';
+    const bgSaldoDisp  = saldoFinal >= 0 ? '#f0fdf4' : '#fef2f2';
+    const bdSaldoDisp  = saldoFinal >= 0 ? '#bbf7d0' : '#fecaca';
+    const corSaldoPrev = saldoPrevisto >= 0 ? '#16a34a' : '#dc2626';
+    const bgSaldoPrev  = saldoPrevisto >= 0 ? '#f0fdf4' : '#fef2f2';
+    const bdSaldoPrev  = saldoPrevisto >= 0 ? '#bbf7d0' : '#fecaca';
+
+    var rows = [
+      {bg:'#f0fdf4', bd:'#bbf7d0', cor:'#16a34a', lbl:'Arrecadado 2026',          val: fmtBRL(arrecadado)},
+      {bg:'#f0fdf4', bd:'#bbf7d0', cor:'#16a34a', lbl:'Sobra 2025',               val: fmtBRL(sobra2025)},
+      {bg:'#f5f5f5', bd:'#e0e0e0', cor:'#111',    lbl:'Total custo previsto',      val: fmtBRL(totalPrevisto)},
+      {bg:'#fffbeb', bd:'#fde68a', cor:'#d97706', lbl:'Já pago em custos',         val: fmtBRL(totalPago)},
+      {bg:'#fef2f2', bd:'#fecaca', cor:'#dc2626', lbl:'Restante a pagar (custos)', val: fmtBRL(totalRestCustos)},
+      {bg:bgSaldoDisp, bd:bdSaldoDisp, cor:corSaldoDisp, lbl:'Saldo disponível agora', val: fmtBRL(saldoFinal), sub:'(arrecadado + sobra − já pago)'},
+    ];
+
+    var gridHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">';
+    rows.forEach(function(r) {
+      gridHTML += '<div style="background:' + r.bg + ';border:1px solid ' + r.bd + ';border-radius:8px;padding:10px 14px">';
+      gridHTML += '<div style="font-size:9px;color:' + r.cor + ';text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">' + r.lbl + '</div>';
+      gridHTML += '<div style="font-size:18px;font-weight:700;color:' + r.cor + '">' + r.val + '</div>';
+      if (r.sub) gridHTML += '<div style="font-size:9px;color:#888;margin-top:2px">' + r.sub + '</div>';
+      gridHTML += '</div>';
+    });
+    gridHTML += '</div>';
+
+    var prevHTML = '<div style="background:' + bgSaldoPrev + ';border:1px solid ' + bdSaldoPrev + ';border-radius:8px;padding:12px 16px;margin-top:8px">';
+    prevHTML += '<div style="font-size:9px;color:' + corSaldoPrev + ';text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Saldo previsto (após pagar tudo)</div>';
+    prevHTML += '<div style="font-size:22px;font-weight:700;color:' + corSaldoPrev + '">' + fmtBRL(saldoPrevisto) + '</div>';
+    prevHTML += '<div style="font-size:9px;color:#888;margin-top:2px">(arrecadado + sobra − custo total previsto)</div>';
+    prevHTML += '</div>';
+
+    resumo.innerHTML = gridHTML + prevHTML;
   }
 }
 
