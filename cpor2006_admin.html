@@ -124,16 +124,16 @@ textarea:focus{outline:none;border-color:#888}
   <p class="sect-label">Custos</p>
   <table class="cost-tbl">
     <thead><tr>
-      <th style="width:32%">Fornecedor</th><th style="width:11%">Qtd</th>
-      <th style="width:17%">Unit.</th><th style="width:16%">Total</th>
-      <th style="width:16%">Pago</th><th style="width:8%"></th>
+      <th style="width:28%">Fornecedor</th><th style="width:9%">Qtd</th>
+      <th style="width:13%">Unit.</th><th style="width:13%">Total prev.</th>
+      <th style="width:13%">Pago</th><th style="width:13%">Restante</th><th style="width:8%"></th>
     </tr></thead>
     <tbody id="cost-body"></tbody>
   </table>
   <button class="btn" style="margin-top:8px;font-size:12px" onclick="addCostItem()">+ Item</button>
-  <div class="saldo-box">
-    <span style="font-size:13px;color:#666">Saldo (arrecadado − custo previsto)</span>
-    <span style="font-size:18px;font-weight:600" id="saldo-val">R$ 0</span>
+  <div id="custos-resumo"></div>
+  <div class="saldo-box" style="display:none">
+    <span id="saldo-val">R$ 0</span>
   </div>
   <br><p class="sect-label" style="margin-top:1rem">Visualização</p>
 
@@ -441,19 +441,70 @@ async function processCmd() {
 function renderCustos() {
   const tbody = document.getElementById('cost-body'); if (!tbody) return;
   tbody.innerHTML = state.custos.map((c,i) => {
-    const total = c.qtd * c.unit;
+    const total    = c.qtd * c.unit;
+    const restante = Math.max(0, total - (c.pago||0));
+    const pagoOk   = (c.pago||0) >= total && total > 0;
     return `<tr>
       <td><input value="${c.nome}" onchange="updateCusto(${i},'nome',this.value)"></td>
       <td><input type="number" value="${c.qtd}" min="0" onchange="updateCusto(${i},'qtd',+this.value)"></td>
       <td><input type="number" value="${c.unit}" min="0" onchange="updateCusto(${i},'unit',+this.value)"></td>
-      <td style="color:#888;font-size:12px">${total>0?fmtBRL(total):'-'}</td>
-      <td><input type="number" value="${c.pago}" min="0" onchange="updateCusto(${i},'pago',+this.value)"></td>
+      <td style="font-size:12px;font-weight:500">${total>0?fmtBRL(total):'-'}</td>
+      <td><input type="number" value="${c.pago||0}" min="0" onchange="updateCusto(${i},'pago',+this.value)"></td>
+      <td style="font-size:12px;font-weight:600;color:${restante>0?'#dc2626':total>0?'#16a34a':'#aaa'}">${total>0?(restante>0?fmtBRL(restante):'✓ Pago'):'-'}</td>
       <td><button class="btn" style="padding:2px 6px;font-size:11px;color:#dc2626" onclick="delCost(${i})">✕</button></td>
     </tr>`;
   }).join('');
-  const saldo = totalArr() - totalCusto();
+
+  // Resumo financeiro completo
+  const arrecadado   = totalArr();
+  const sobra2025    = 952; // valor fixo
+  const totalPrevisto = state.custos.reduce((a,c) => a + c.qtd*c.unit, 0);
+  const totalPago    = state.custos.reduce((a,c) => a + (c.pago||0), 0);
+  const totalRestCustos = Math.max(0, totalPrevisto - totalPago);
+  const saldoDisp    = arrecadado + sobra2025;           // o que temos
+  const saldoFinal   = saldoDisp - totalPago;            // após o que já pagamos
+  const saldoPrevisto = saldoDisp - totalPrevisto;       // após pagar tudo previsto
+
   const el = document.getElementById('saldo-val');
-  if (el) { el.textContent = fmtBRL(saldo); el.style.color = saldo>=0?'#16a34a':'#dc2626'; }
+  if (el) { el.textContent = fmtBRL(saldoFinal); el.style.color = saldoFinal>=0?'#16a34a':'#dc2626'; }
+
+  const resumo = document.getElementById('custos-resumo');
+  if (resumo) {
+    resumo.innerHTML = \`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 14px">
+        <div style="font-size:9px;color:#16a34a;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Arrecadado 2026</div>
+        <div style="font-size:18px;font-weight:700;color:#16a34a">\${fmtBRL(arrecadado)}</div>
+      </div>
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 14px">
+        <div style="font-size:9px;color:#16a34a;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Sobra 2025</div>
+        <div style="font-size:18px;font-weight:700;color:#16a34a">\${fmtBRL(sobra2025)}</div>
+      </div>
+      <div style="background:#f5f5f5;border:1px solid #e0e0e0;border-radius:8px;padding:10px 14px">
+        <div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Total custo previsto</div>
+        <div style="font-size:18px;font-weight:700;color:#111">\${fmtBRL(totalPrevisto)}</div>
+      </div>
+      <div style="background:#f5f5f5;border:1px solid #e0e0e0;border-radius:8px;padding:10px 14px">
+        <div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Já pago em custos</div>
+        <div style="font-size:18px;font-weight:700;color:#d97706">\${fmtBRL(totalPago)}</div>
+      </div>
+      <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 14px">
+        <div style="font-size:9px;color:#dc2626;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Restante a pagar (custos)</div>
+        <div style="font-size:18px;font-weight:700;color:#dc2626">\${fmtBRL(totalRestCustos)}</div>
+      </div>
+      <div style="background:\${saldoFinal>=0?'#f0fdf4':'#fef2f2'};border:1px solid \${saldoFinal>=0?'#bbf7d0':'#fecaca'};border-radius:8px;padding:10px 14px">
+        <div style="font-size:9px;color:\${saldoFinal>=0?'#16a34a':'#dc2626'};text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Saldo disponível agora</div>
+        <div style="font-size:18px;font-weight:700;color:\${saldoFinal>=0?'#16a34a':'#dc2626'}">\${fmtBRL(saldoFinal)}</div>
+        <div style="font-size:9px;color:#888;margin-top:2px">(arrecadado + sobra - pago)</div>
+      </div>
+    </div>
+    <div style="background:\${saldoPrevisto>=0?'#f0fdf4':'#fef2f2'};border:1px solid \${saldoPrevisto>=0?'#bbf7d0':'#fecaca'};border-radius:8px;padding:10px 14px;margin-top:8px">
+      <div style="font-size:9px;color:\${saldoPrevisto>=0?'#16a34a':'#dc2626'};text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Saldo previsto (após pagar tudo)</div>
+      <div style="font-size:20px;font-weight:700;color:\${saldoPrevisto>=0?'#16a34a':'#dc2626'}">\${fmtBRL(saldoPrevisto)}</div>
+      <div style="font-size:9px;color:#888;margin-top:2px">(arrecadado + sobra − custo total previsto)</div>
+    </div>
+    \`;
+  }
 }
 
 async function updateCusto(idx, campo, valor) {
