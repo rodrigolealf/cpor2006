@@ -237,6 +237,18 @@ async function loadData() {
 }
 
 function fmtBRL(v) { return 'R$ ' + Math.round(v).toLocaleString('pt-BR'); }
+function fmtBRLInput(v) { return 'R$ ' + (v||0).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+function maskMoneyInput(el) {
+  let digits = el.value.replace(/\D/g, '').replace(/^0+(?=\d)/, '');
+  while (digits.length < 3) digits = '0' + digits;
+  const cents = digits.slice(-2);
+  const intPart = digits.slice(0, -2).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  el.value = 'R$ ' + intPart + ',' + cents;
+}
+function parseMoneyInput(str) {
+  const digits = str.replace(/\D/g, '');
+  return digits ? parseInt(digits, 10) / 100 : 0;
+}
 function totalArr()   { return state.pessoas.reduce((a,p) => a+p.pago, 0); }
 function totalCusto() { return state.custos.reduce((a,c)  => a+c.qtd*c.unit, 0); }
 function sortPessoas(lista) {
@@ -449,7 +461,7 @@ function renderCustos() {
       <td><input type="number" value="${c.qtd}" min="0" onchange="updateCusto(${i},'qtd',+this.value)"></td>
       <td><input type="number" value="${c.unit}" min="0" onchange="updateCusto(${i},'unit',+this.value)"></td>
       <td style="font-size:12px;font-weight:500">${total>0?fmtBRL(total):'-'}</td>
-      <td><input type="number" value="${c.pago||0}" min="0" onchange="updateCusto(${i},'pago',+this.value)"></td>
+      <td><input type="text" inputmode="numeric" value="${fmtBRLInput(c.pago||0)}" oninput="maskMoneyInput(this)" onchange="updateCusto(${i},'pago',parseMoneyInput(this.value))"></td>
       <td style="font-size:12px;font-weight:600;color:${restante>0?'#dc2626':total>0?'#16a34a':'#aaa'}">${total>0?(restante>0?fmtBRL(restante):'✓ Pago'):'-'}</td>
       <td><button class="btn" style="padding:2px 6px;font-size:11px;color:#dc2626" onclick="delCost(${i})">✕</button></td>
     </tr>`;
