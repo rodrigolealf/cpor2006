@@ -94,6 +94,7 @@ textarea:focus{outline:none;border-color:#888}
 .lista-modal-header h3{font-size:15px;font-weight:600}
 .btn-close{background:none;border:none;font-size:18px;cursor:pointer;color:#888;padding:2px 6px;line-height:1}
 .lista-pagina{padding:18px;background:#fff}
+.lista-toolbar{display:flex;justify-content:space-between;align-items:center;padding:10px 18px;background:#f7f7f7;border-bottom:1px solid #eee;font-size:12px;color:#555;font-weight:600;flex-wrap:wrap;gap:8px}
 .lista-pagina-titulo{font-size:12px;color:#888;text-align:center;margin-bottom:14px}
 .lista-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .lista-box{border:1px solid #e0e0e0;border-radius:10px;padding:10px 12px;background:#fafafa}
@@ -102,11 +103,22 @@ textarea:focus{outline:none;border-color:#888}
 .lista-box-titulo{flex:1;min-width:0}
 .lista-box-titulo h4{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#111}
 .lista-box-count{font-size:10px;color:#888;font-weight:500}
+.lista-select-all{font-size:9px;font-weight:600;color:#2563eb;cursor:pointer;background:none;border:none;padding:2px 0;text-decoration:underline;white-space:nowrap}
 .lista-box ul{list-style:none}
 .lista-box li{font-size:12px;padding:2.5px 0;color:#333;border-bottom:0.5px solid #f0f0f0}
 .lista-box li:last-child{border-bottom:none}
+.lista-box li.unchecked{color:#bbb;text-decoration:line-through}
+.lista-box li label{display:flex;align-items:center;gap:6px;cursor:pointer;width:100%}
+.lista-check{width:13px;height:13px;flex-shrink:0;cursor:pointer}
+.lista-pagina.capturando .lista-select-all,
+.lista-pagina.capturando .lista-check{display:none!important}
+.lista-pagina.capturando .lista-box li.unchecked{display:none!important}
+.lista-pagina.capturando .lista-box li label{gap:0}
+.lista-count-captura{display:none}
+.lista-pagina.capturando .lista-count-interativo{display:none}
+.lista-pagina.capturando .lista-count-captura{display:inline}
 .lista-total{margin-top:16px;padding-top:12px;border-top:2px solid #111;text-align:center;font-size:14px;font-weight:700;color:#111}
-.lista-total span{color:#16a34a}
+.lista-total span.num{color:#16a34a}
 .lista-footer{display:flex;gap:8px;justify-content:flex-end;padding:12px 18px;border-top:1px solid #eee;flex-wrap:wrap}
 @media (max-width:480px){.lista-grid{grid-template-columns:1fr}}
 </style>
@@ -217,14 +229,21 @@ textarea:focus{outline:none;border-color:#888}
       <h3 id="lista-titulo">Confirmados</h3>
       <button class="btn-close" onclick="fecharLista()">✕</button>
     </div>
+    <div class="lista-toolbar">
+      <span id="lista-sel-count">0 selecionados</span>
+      <div style="display:flex;gap:6px">
+        <button class="btn" style="font-size:11px;padding:4px 10px" onclick="marcarTodos(true)">Marcar todos</button>
+        <button class="btn" style="font-size:11px;padding:4px 10px" onclick="marcarTodos(false)">Desmarcar todos</button>
+      </div>
+    </div>
     <div id="lista-pagina" class="lista-pagina">
       <div class="lista-pagina-titulo" id="lista-pagina-titulo">Churrasco 20 Anos — CPOR Turma 2006</div>
       <div class="lista-grid" id="lista-grid"></div>
       <div class="lista-total" id="lista-total"></div>
     </div>
     <div class="lista-footer">
-      <button class="btn" onclick="salvarListaPDF()">Salvar PDF</button>
-      <button class="btn" onclick="salvarListaImagem()">Salvar Imagem</button>
+      <button class="btn" onclick="salvarListaPDF()">Salvar PDF (selecionados)</button>
+      <button class="btn" onclick="salvarListaImagem()">Salvar Imagem (selecionados)</button>
       <button class="btn" onclick="fecharLista()">Fechar</button>
     </div>
   </div>
@@ -613,14 +632,29 @@ async function updateDataPagamento(id, data) {
 function renderAdmin() { renderSumCards('sum-admin'); renderCustos(); }
 function renderAll() { renderAdmin(); renderView(); }
 
+let listaTipo = 'confirmados';
+let listaSelecionados = new Set();
+
 function abrirLista(tipo) {
-  const filtro  = tipo === 'confirmados' ? p => p.pago > 0 : p => p.pago > 0 && p.pago < COTA;
-  const titulo  = tipo === 'confirmados' ? 'Combatentes Confirmados' : 'Pagamentos Parciais';
+  listaTipo = tipo;
+  const filtro = tipo === 'confirmados' ? p => p.pago > 0 : p => p.pago > 0 && p.pago < COTA;
+  const titulo = tipo === 'confirmados' ? 'Combatentes Confirmados' : 'Pagamentos Parciais';
   document.getElementById('lista-titulo').textContent = titulo;
   document.getElementById('lista-pagina-titulo').textContent = titulo + ' — Churrasco 20 Anos · CPOR Turma 2006';
 
+  // Por padrão começa com todo mundo marcado; você desmarca quem não vai nesse lote
+  listaSelecionados = new Set(state.pessoas.filter(filtro).map(p => p.id));
+
+  renderListaGrid();
+  document.getElementById('lista-modal').classList.add('open');
+}
+
+function renderListaGrid() {
+  const tipo = listaTipo;
+  const filtro = tipo === 'confirmados' ? p => p.pago > 0 : p => p.pago > 0 && p.pago < COTA;
   const grid = document.getElementById('lista-grid');
   let totalGeral = 0;
+
   grid.innerHTML = CURSOS.map(cid => {
     const nomeCurso = NOMES[cid];
     const membros = state.pessoas
@@ -628,23 +662,59 @@ function abrirLista(tipo) {
       .sort((a,b) => a.nome.localeCompare(b.nome, 'pt-BR'));
     if (!membros.length) return '';
     totalGeral += membros.length;
-    const linhas = membros.map(p => `<li>${p.nome} - ${nomeCurso}</li>`).join('');
+    const selCount = membros.filter(p => listaSelecionados.has(p.id)).length;
+    const todosMarcados = selCount === membros.length;
+    const linhas = membros.map(p => {
+      const marcado = listaSelecionados.has(p.id);
+      return `<li class="${marcado?'':'unchecked'}">
+        <label>
+          <input type="checkbox" class="lista-check" ${marcado?'checked':''} onchange="toggleSelecionado(${p.id})">
+          <span>${p.nome} - ${nomeCurso}</span>
+        </label>
+      </li>`;
+    }).join('');
     return `<div class="lista-box">
       <div class="lista-box-header">
         <img src="${IMGS[cid]}" class="lista-box-icon">
         <div class="lista-box-titulo">
           <h4>${nomeCurso}</h4>
-          <div class="lista-box-count">${membros.length} pessoa${membros.length===1?'':'s'}</div>
+          <div class="lista-box-count">
+            <span class="lista-count-interativo">${selCount}/${membros.length} selecionado${selCount===1?'':'s'}</span>
+            <span class="lista-count-captura">${selCount} pessoa${selCount===1?'':'s'}</span>
+          </div>
         </div>
+        <button class="lista-select-all" onclick="toggleCurso('${cid}',${todosMarcados?'false':'true'})">${todosMarcados?'Desmarcar':'Marcar todos'}</button>
       </div>
       <ul>${linhas}</ul>
     </div>`;
   }).join('');
 
   const labelTotal = tipo === 'confirmados' ? 'combatentes confirmados' : 'pagamentos parciais';
-  document.getElementById('lista-total').innerHTML = `Total: <span>${totalGeral}</span> ${labelTotal}`;
+  document.getElementById('lista-total').innerHTML =
+    `<span class="lista-count-interativo">Total: <span class="num">${listaSelecionados.size}</span> selecionado${listaSelecionados.size===1?'':'s'} de ${totalGeral} ${labelTotal}</span>` +
+    `<span class="lista-count-captura">Total: <span class="num">${listaSelecionados.size}</span> ${labelTotal}</span>`;
+  document.getElementById('lista-sel-count').textContent = `${listaSelecionados.size} selecionado${listaSelecionados.size===1?'':'s'}`;
+}
 
-  document.getElementById('lista-modal').classList.add('open');
+function toggleSelecionado(id) {
+  if (listaSelecionados.has(id)) listaSelecionados.delete(id);
+  else listaSelecionados.add(id);
+  renderListaGrid();
+}
+
+function toggleCurso(cid, marcar) {
+  const filtro = listaTipo === 'confirmados' ? p => p.pago > 0 : p => p.pago > 0 && p.pago < COTA;
+  state.pessoas.filter(p => p.curso === cid && filtro(p)).forEach(p => {
+    if (marcar) listaSelecionados.add(p.id); else listaSelecionados.delete(p.id);
+  });
+  renderListaGrid();
+}
+
+function marcarTodos(marcar) {
+  const filtro = listaTipo === 'confirmados' ? p => p.pago > 0 : p => p.pago > 0 && p.pago < COTA;
+  if (marcar) listaSelecionados = new Set(state.pessoas.filter(filtro).map(p => p.id));
+  else listaSelecionados.clear();
+  renderListaGrid();
 }
 
 function fecharLista() {
@@ -655,9 +725,12 @@ async function capturarLista() {
   const pagina = document.getElementById('lista-pagina');
   const viewportMeta = document.querySelector('meta[name="viewport"]');
   const originalViewport = viewportMeta ? viewportMeta.getAttribute('content') : null;
+  const modal = document.getElementById('lista-modal');
+  pagina.classList.add('capturando');
   try {
     if (viewportMeta) viewportMeta.setAttribute('content', 'width=794, initial-scale=1.0');
     window.scrollTo(0, 0);
+    if (modal) modal.scrollTop = 0;
     await new Promise(r => setTimeout(r, 100));
     const canvas = await html2canvas(pagina, {
       scale: 2,
@@ -674,17 +747,39 @@ async function capturarLista() {
     return canvas;
   } finally {
     if (viewportMeta && originalViewport) viewportMeta.setAttribute('content', originalViewport);
+    pagina.classList.remove('capturando');
   }
 }
 
 async function salvarListaPDF() {
   const canvas = await capturarLista();
   const { jsPDF } = window.jspdf;
-  const imgData = canvas.toDataURL('image/png');
   const pdf = new jsPDF('p', 'mm', 'a4');
-  const imgWidth = 210;
-  const imgHeight = (canvas.height * imgWidth) / canvas.width;
-  pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+  const pageWidth  = 210;
+  const pageHeight = 297;
+  const imgWidth   = pageWidth;
+  const imgHeight  = (canvas.height * imgWidth) / canvas.width;
+
+  if (imgHeight <= pageHeight) {
+    pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, imgWidth, imgHeight);
+  } else {
+    // Conteúdo mais alto que uma página: fatiar em varias páginas A4
+    const pxPerMm = canvas.width / imgWidth;
+    const pageHeightPx = Math.floor(pageHeight * pxPerMm);
+    let y = 0, first = true;
+    while (y < canvas.height) {
+      const sliceHeightPx = Math.min(pageHeightPx, canvas.height - y);
+      const sliceCanvas = document.createElement('canvas');
+      sliceCanvas.width = canvas.width;
+      sliceCanvas.height = sliceHeightPx;
+      sliceCanvas.getContext('2d').drawImage(canvas, 0, y, canvas.width, sliceHeightPx, 0, 0, canvas.width, sliceHeightPx);
+      const sliceHeightMm = (sliceHeightPx * imgWidth) / canvas.width;
+      if (!first) pdf.addPage();
+      pdf.addImage(sliceCanvas.toDataURL('image/png'), 'PNG', 0, 0, imgWidth, sliceHeightMm);
+      y += sliceHeightPx;
+      first = false;
+    }
+  }
   pdf.save('cpor2006_lista.pdf');
 }
 
