@@ -97,10 +97,16 @@ textarea:focus{outline:none;border-color:#888}
 .lista-pagina-titulo{font-size:12px;color:#888;text-align:center;margin-bottom:14px}
 .lista-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .lista-box{border:1px solid #e0e0e0;border-radius:10px;padding:10px 12px;background:#fafafa}
-.lista-box h4{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#111;border-bottom:1px solid #ddd;padding-bottom:5px;margin-bottom:6px}
+.lista-box-header{display:flex;align-items:center;gap:8px;border-bottom:1px solid #ddd;padding-bottom:6px;margin-bottom:6px}
+.lista-box-icon{width:30px;height:30px;object-fit:contain;flex-shrink:0}
+.lista-box-titulo{flex:1;min-width:0}
+.lista-box-titulo h4{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#111}
+.lista-box-count{font-size:10px;color:#888;font-weight:500}
 .lista-box ul{list-style:none}
 .lista-box li{font-size:12px;padding:2.5px 0;color:#333;border-bottom:0.5px solid #f0f0f0}
 .lista-box li:last-child{border-bottom:none}
+.lista-total{margin-top:16px;padding-top:12px;border-top:2px solid #111;text-align:center;font-size:14px;font-weight:700;color:#111}
+.lista-total span{color:#16a34a}
 .lista-footer{display:flex;gap:8px;justify-content:flex-end;padding:12px 18px;border-top:1px solid #eee;flex-wrap:wrap}
 @media (max-width:480px){.lista-grid{grid-template-columns:1fr}}
 </style>
@@ -214,6 +220,7 @@ textarea:focus{outline:none;border-color:#888}
     <div id="lista-pagina" class="lista-pagina">
       <div class="lista-pagina-titulo" id="lista-pagina-titulo">Churrasco 20 Anos — CPOR Turma 2006</div>
       <div class="lista-grid" id="lista-grid"></div>
+      <div class="lista-total" id="lista-total"></div>
     </div>
     <div class="lista-footer">
       <button class="btn" onclick="salvarListaPDF()">Salvar PDF</button>
@@ -613,15 +620,29 @@ function abrirLista(tipo) {
   document.getElementById('lista-pagina-titulo').textContent = titulo + ' — Churrasco 20 Anos · CPOR Turma 2006';
 
   const grid = document.getElementById('lista-grid');
+  let totalGeral = 0;
   grid.innerHTML = CURSOS.map(cid => {
     const nomeCurso = NOMES[cid];
     const membros = state.pessoas
       .filter(p => p.curso === cid && filtro(p))
       .sort((a,b) => a.nome.localeCompare(b.nome, 'pt-BR'));
     if (!membros.length) return '';
+    totalGeral += membros.length;
     const linhas = membros.map(p => `<li>${p.nome} - ${nomeCurso}</li>`).join('');
-    return `<div class="lista-box"><h4>${nomeCurso}</h4><ul>${linhas}</ul></div>`;
+    return `<div class="lista-box">
+      <div class="lista-box-header">
+        <img src="${IMGS[cid]}" class="lista-box-icon">
+        <div class="lista-box-titulo">
+          <h4>${nomeCurso}</h4>
+          <div class="lista-box-count">${membros.length} pessoa${membros.length===1?'':'s'}</div>
+        </div>
+      </div>
+      <ul>${linhas}</ul>
+    </div>`;
   }).join('');
+
+  const labelTotal = tipo === 'confirmados' ? 'combatentes confirmados' : 'pagamentos parciais';
+  document.getElementById('lista-total').innerHTML = `Total: <span>${totalGeral}</span> ${labelTotal}`;
 
   document.getElementById('lista-modal').classList.add('open');
 }
