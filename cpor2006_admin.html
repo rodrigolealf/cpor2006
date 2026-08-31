@@ -151,6 +151,7 @@ textarea:focus{outline:none;border-color:#888}
   <div class="sum-cards" id="sum-admin"></div>
   <div class="print-actions">
     <button class="btn" onclick="abrirLista('confirmados')">🖨️ Lista de Confirmados</button>
+    <button class="btn" onclick="abrirLista('quitados')">🖨️ Lista de Quitados</button>
     <button class="btn" onclick="abrirLista('parciais')">🖨️ Lista de Parciais</button>
   </div>
   <div class="saldo-anterior">
@@ -635,10 +636,15 @@ function renderAll() { renderAdmin(); renderView(); }
 let listaTipo = 'confirmados';
 let listaSelecionados = new Set();
 
+const LISTA_TIPOS = {
+  confirmados: { filtro: p => p.pago > 0,                    titulo: 'Combatentes Confirmados', label: 'combatentes confirmados' },
+  quitados:    { filtro: p => p.pago >= COTA,                 titulo: 'Pagamentos Quitados',      label: 'pagamentos quitados' },
+  parciais:    { filtro: p => p.pago > 0 && p.pago < COTA,    titulo: 'Pagamentos Parciais',       label: 'pagamentos parciais' }
+};
+
 function abrirLista(tipo) {
   listaTipo = tipo;
-  const filtro = tipo === 'confirmados' ? p => p.pago > 0 : p => p.pago > 0 && p.pago < COTA;
-  const titulo = tipo === 'confirmados' ? 'Combatentes Confirmados' : 'Pagamentos Parciais';
+  const { filtro, titulo } = LISTA_TIPOS[tipo];
   document.getElementById('lista-titulo').textContent = titulo;
   document.getElementById('lista-pagina-titulo').textContent = titulo + ' — Churrasco 20 Anos · CPOR Turma 2006';
 
@@ -650,8 +656,7 @@ function abrirLista(tipo) {
 }
 
 function renderListaGrid() {
-  const tipo = listaTipo;
-  const filtro = tipo === 'confirmados' ? p => p.pago > 0 : p => p.pago > 0 && p.pago < COTA;
+  const { filtro, label: labelTotal } = LISTA_TIPOS[listaTipo];
   const grid = document.getElementById('lista-grid');
   let totalGeral = 0;
 
@@ -689,7 +694,6 @@ function renderListaGrid() {
     </div>`;
   }).join('');
 
-  const labelTotal = tipo === 'confirmados' ? 'combatentes confirmados' : 'pagamentos parciais';
   document.getElementById('lista-total').innerHTML =
     `<span class="lista-count-interativo">Total: <span class="num">${listaSelecionados.size}</span> selecionado${listaSelecionados.size===1?'':'s'} de ${totalGeral} ${labelTotal}</span>` +
     `<span class="lista-count-captura">Total: <span class="num">${listaSelecionados.size}</span> ${labelTotal}</span>`;
@@ -703,7 +707,7 @@ function toggleSelecionado(id) {
 }
 
 function toggleCurso(cid, marcar) {
-  const filtro = listaTipo === 'confirmados' ? p => p.pago > 0 : p => p.pago > 0 && p.pago < COTA;
+  const { filtro } = LISTA_TIPOS[listaTipo];
   state.pessoas.filter(p => p.curso === cid && filtro(p)).forEach(p => {
     if (marcar) listaSelecionados.add(p.id); else listaSelecionados.delete(p.id);
   });
@@ -711,7 +715,7 @@ function toggleCurso(cid, marcar) {
 }
 
 function marcarTodos(marcar) {
-  const filtro = listaTipo === 'confirmados' ? p => p.pago > 0 : p => p.pago > 0 && p.pago < COTA;
+  const { filtro } = LISTA_TIPOS[listaTipo];
   if (marcar) listaSelecionados = new Set(state.pessoas.filter(filtro).map(p => p.id));
   else listaSelecionados.clear();
   renderListaGrid();
