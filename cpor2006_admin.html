@@ -244,6 +244,7 @@ textarea:focus{outline:none;border-color:#888}
     </div>
     <div class="lista-footer">
       <button class="btn" onclick="salvarListaPDF()">Salvar PDF (selecionados)</button>
+      <button class="btn" onclick="salvarListaWord()">Salvar Word (selecionados)</button>
       <button class="btn" onclick="salvarListaImagem()">Salvar Imagem (selecionados)</button>
       <button class="btn" onclick="fecharLista()">Fechar</button>
     </div>
@@ -755,6 +756,10 @@ async function capturarLista() {
   }
 }
 
+function nomeArquivoLista(ext) {
+  return `cpor2006_lista_${listaTipo}.${ext}`;
+}
+
 async function salvarListaPDF() {
   const canvas = await capturarLista();
   const { jsPDF } = window.jspdf;
@@ -784,15 +789,67 @@ async function salvarListaPDF() {
       first = false;
     }
   }
-  pdf.save('cpor2006_lista.pdf');
+  pdf.save(nomeArquivoLista('pdf'));
 }
 
 async function salvarListaImagem() {
   const canvas = await capturarLista();
   const link = document.createElement('a');
-  link.download = 'cpor2006_lista.png';
+  link.download = nomeArquivoLista('png');
   link.href = canvas.toDataURL('image/png');
   link.click();
+}
+
+function construirConteudoWord() {
+  const { filtro, titulo, label: labelTotal } = LISTA_TIPOS[listaTipo];
+  let totalGeral = 0;
+  const boxes = CURSOS.map(cid => {
+    const nomeCurso = NOMES[cid];
+    const membros = state.pessoas
+      .filter(p => p.curso === cid && filtro(p) && listaSelecionados.has(p.id))
+      .sort((a,b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+    if (!membros.length) return null;
+    totalGeral += membros.length;
+    const linhas = membros.map(p =>
+      `<p style="margin:2px 0;font-size:12px;border-bottom:1px solid #eee;padding:2px 0">${p.nome} - ${nomeCurso}</p>`
+    ).join('');
+    return `<td style="width:50%;vertical-align:top;padding:6px">
+      <div style="border:1px solid #ccc;border-radius:6px;padding:10px 14px;background:#fafafa">
+        <div style="border-bottom:1px solid #ccc;padding-bottom:6px;margin-bottom:6px">
+          <img src="${IMGS[cid]}" style="height:26px;vertical-align:middle;margin-right:8px">
+          <strong style="font-size:12px;text-transform:uppercase;letter-spacing:.4px">${nomeCurso}</strong>
+          <div style="font-size:11px;color:#666;margin-top:2px">${membros.length} pessoa${membros.length===1?'':'s'}</div>
+        </div>
+        ${linhas}
+      </div>
+    </td>`;
+  }).filter(Boolean);
+
+  let linhasTabela = '';
+  for (let i = 0; i < boxes.length; i += 2) {
+    linhasTabela += `<tr>${boxes[i]}${boxes[i+1] || '<td style="width:50%"></td>'}</tr>`;
+  }
+
+  return `
+    <h2 style="text-align:center;font-size:16px;color:#333">${titulo} — Churrasco 20 Anos · CPOR Turma 2006</h2>
+    <table style="width:100%;border-collapse:collapse">${linhasTabela}</table>
+    <p style="text-align:center;margin-top:20px;padding-top:12px;border-top:2px solid #111;font-size:14px;font-weight:bold">
+      Total: <span style="color:#16a34a">${totalGeral}</span> ${labelTotal}
+    </p>`;
+}
+
+function salvarListaWord() {
+  const conteudo = construirConteudoWord();
+  const html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+  <head><meta charset="utf-8"><title>${LISTA_TIPOS[listaTipo].titulo}</title></head>
+  <body style="font-family:Arial,sans-serif;color:#111">${conteudo}</body></html>`;
+  const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = nomeArquivoLista('doc');
+  link.click();
+  URL.revokeObjectURL(url);
 }
 
 loadData().catch(e => {
