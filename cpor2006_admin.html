@@ -529,7 +529,7 @@ function renderCustos() {
     return `<tr>
       <td><input value="${c.nome}" onchange="updateCusto(${i},'nome',this.value)"></td>
       <td><input type="number" value="${c.qtd}" min="0" onchange="updateCusto(${i},'qtd',+this.value)"></td>
-      <td><input type="number" value="${c.unit}" min="0" onchange="updateCusto(${i},'unit',+this.value)"></td>
+      <td><input type="text" inputmode="numeric" value="${fmtBRLInput(c.unit||0)}" oninput="maskMoneyInput(this)" onchange="updateCusto(${i},'unit',parseMoneyInput(this.value))"></td>
       <td style="font-size:12px;font-weight:500">${total>0?fmtBRL(total):'-'}</td>
       <td><input type="text" inputmode="numeric" value="${fmtBRLInput(c.pago||0)}" oninput="maskMoneyInput(this)" onchange="updateCusto(${i},'pago',parseMoneyInput(this.value))"></td>
       <td style="font-size:12px;font-weight:600;color:${restante>0?'#dc2626':total>0?'#16a34a':'#aaa'}">${total>0?(restante>0?fmtBRL(restante):'✓ Pago'):'-'}</td>
