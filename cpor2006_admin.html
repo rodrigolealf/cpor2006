@@ -526,13 +526,13 @@ function renderCustos() {
     const total    = c.qtd * c.unit;
     const restante = Math.max(0, total - (c.pago||0));
     const pagoOk   = (c.pago||0) >= total && total > 0;
-    return `<tr>
+    return `<tr data-row="${i}">
       <td><input value="${c.nome}" onchange="updateCusto(${i},'nome',this.value)"></td>
-      <td><input type="number" value="${c.qtd}" min="0" onchange="updateCusto(${i},'qtd',+this.value)"></td>
-      <td><input type="text" inputmode="numeric" value="${fmtBRLInput(c.unit||0)}" oninput="maskMoneyInput(this)" onchange="updateCusto(${i},'unit',parseMoneyInput(this.value))"></td>
-      <td style="font-size:12px;font-weight:500">${total>0?fmtBRL(total):'-'}</td>
-      <td><input type="text" inputmode="numeric" value="${fmtBRLInput(c.pago||0)}" oninput="maskMoneyInput(this)" onchange="updateCusto(${i},'pago',parseMoneyInput(this.value))"></td>
-      <td style="font-size:12px;font-weight:600;color:${restante>0?'#dc2626':total>0?'#16a34a':'#aaa'}">${total>0?(restante>0?fmtBRL(restante):'✓ Pago'):'-'}</td>
+      <td><input class="qtd-in" type="number" value="${c.qtd}" min="0" oninput="previewCusto(${i})" onchange="updateCusto(${i},'qtd',+this.value)"></td>
+      <td><input class="unit-in" type="text" inputmode="numeric" value="${fmtBRLInput(c.unit||0)}" oninput="maskMoneyInput(this);previewCusto(${i})" onchange="updateCusto(${i},'unit',parseMoneyInput(this.value))"></td>
+      <td class="total-cell" style="font-size:12px;font-weight:500">${total>0?fmtBRL(total):'-'}</td>
+      <td><input class="pago-in" type="text" inputmode="numeric" value="${fmtBRLInput(c.pago||0)}" oninput="maskMoneyInput(this);previewCusto(${i})" onchange="updateCusto(${i},'pago',parseMoneyInput(this.value))"></td>
+      <td class="restante-cell" style="font-size:12px;font-weight:600;color:${restante>0?'#dc2626':total>0?'#16a34a':'#aaa'}">${total>0?(restante>0?fmtBRL(restante):'✓ Pago'):'-'}</td>
       <td><button class="btn" style="padding:2px 6px;font-size:11px;color:#dc2626" onclick="delCost(${i})">✕</button></td>
     </tr>`;
   }).join('');
@@ -545,7 +545,12 @@ function renderCustos() {
   const totalRestCustos = Math.max(0, totalPrevisto - totalPago);
   const saldoDisp    = arrecadado + sobra2025;           // o que temos
   const saldoFinal   = saldoDisp - totalPago;            // após o que já pagamos
-  const saldoPrevisto = saldoDisp - totalPrevisto;       // após pagar tudo previsto
+  const saldoAtual   = saldoDisp - totalPrevisto;        // com o que já ARRECADAMOS, após pagar tudo previsto
+
+  // Cenário otimista: confirmados (quitados + parciais) pagando a cota inteira
+  const confirmadosCount = state.pessoas.filter(p => p.pago > 0).length;
+  const totalPrevistoReceber = confirmadosCount * COTA;
+  const saldoPrevisto = (totalPrevistoReceber + sobra2025) - totalPrevisto; // se TODOS confirmados quitarem
 
   const el = document.getElementById('saldo-val');
   if (el) { el.textContent = fmtBRL(saldoFinal); el.style.color = saldoFinal>=0?'#16a34a':'#dc2626'; }
@@ -555,6 +560,9 @@ function renderCustos() {
     const corSaldoDisp = saldoFinal >= 0 ? '#16a34a' : '#dc2626';
     const bgSaldoDisp  = saldoFinal >= 0 ? '#f0fdf4' : '#fef2f2';
     const bdSaldoDisp  = saldoFinal >= 0 ? '#bbf7d0' : '#fecaca';
+    const corSaldoAtual = saldoAtual >= 0 ? '#16a34a' : '#dc2626';
+    const bgSaldoAtual  = saldoAtual >= 0 ? '#f0fdf4' : '#fef2f2';
+    const bdSaldoAtual  = saldoAtual >= 0 ? '#bbf7d0' : '#fecaca';
     const corSaldoPrev = saldoPrevisto >= 0 ? '#16a34a' : '#dc2626';
     const bgSaldoPrev  = saldoPrevisto >= 0 ? '#f0fdf4' : '#fef2f2';
     const bdSaldoPrev  = saldoPrevisto >= 0 ? '#bbf7d0' : '#fecaca';
@@ -578,13 +586,19 @@ function renderCustos() {
     });
     gridHTML += '</div>';
 
+    var atualHTML = '<div style="background:' + bgSaldoAtual + ';border:1px solid ' + bdSaldoAtual + ';border-radius:8px;padding:12px 16px;margin-top:8px">';
+    atualHTML += '<div style="font-size:9px;color:' + corSaldoAtual + ';text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Saldo atual (após pagar tudo)</div>';
+    atualHTML += '<div style="font-size:22px;font-weight:700;color:' + corSaldoAtual + '">' + fmtBRL(saldoAtual) + '</div>';
+    atualHTML += '<div style="font-size:9px;color:#888;margin-top:2px">(arrecadado + sobra − custo total previsto)</div>';
+    atualHTML += '</div>';
+
     var prevHTML = '<div style="background:' + bgSaldoPrev + ';border:1px solid ' + bdSaldoPrev + ';border-radius:8px;padding:12px 16px;margin-top:8px">';
-    prevHTML += '<div style="font-size:9px;color:' + corSaldoPrev + ';text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Saldo previsto (após pagar tudo)</div>';
+    prevHTML += '<div style="font-size:9px;color:' + corSaldoPrev + ';text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Saldo previsto (se todos confirmados quitarem)</div>';
     prevHTML += '<div style="font-size:22px;font-weight:700;color:' + corSaldoPrev + '">' + fmtBRL(saldoPrevisto) + '</div>';
-    prevHTML += '<div style="font-size:9px;color:#888;margin-top:2px">(arrecadado + sobra − custo total previsto)</div>';
+    prevHTML += '<div style="font-size:9px;color:#888;margin-top:2px">(' + confirmadosCount + ' confirmados × R$' + COTA + ' = ' + fmtBRL(totalPrevistoReceber) + ' + sobra − custo total previsto)</div>';
     prevHTML += '</div>';
 
-    resumo.innerHTML = gridHTML + prevHTML;
+    resumo.innerHTML = gridHTML + atualHTML + prevHTML;
   }
 }
 
@@ -593,6 +607,23 @@ async function updateCusto(idx, campo, valor) {
   c[campo] = valor;
   renderCustos();
   await supaFetch('custos', 'PATCH', {[campo]: valor}, `?id=eq.${c.id}`);
+}
+
+function previewCusto(idx) {
+  const row = document.querySelector(`tr[data-row="${idx}"]`);
+  if (!row) return;
+  const qtd  = +row.querySelector('.qtd-in').value || 0;
+  const unit = parseMoneyInput(row.querySelector('.unit-in').value);
+  const pago = parseMoneyInput(row.querySelector('.pago-in').value);
+  const total    = qtd * unit;
+  const restante = Math.max(0, total - pago);
+  const totalCell = row.querySelector('.total-cell');
+  const restCell  = row.querySelector('.restante-cell');
+  if (totalCell) totalCell.textContent = total > 0 ? fmtBRL(total) : '-';
+  if (restCell) {
+    restCell.textContent = total > 0 ? (restante > 0 ? fmtBRL(restante) : '✓ Pago') : '-';
+    restCell.style.color = restante > 0 ? '#dc2626' : (total > 0 ? '#16a34a' : '#aaa');
+  }
 }
 
 async function addCostItem() {
