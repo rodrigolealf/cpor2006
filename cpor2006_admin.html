@@ -232,7 +232,7 @@ textarea:focus{outline:none;border-color:#888}
   <div id="tab-sim" class="vsection">
     <p style="font-size:12px;color:#666;margin-bottom:12px">
       Simule o resultado financeiro pra um número diferente de pessoas confirmadas. Marque "Por pessoa" nos itens que escalam com a quantidade (ex: buffet, brindes) — os demais ficam com o valor fixo já cadastrado.
-      <br><strong>Atenção:</strong> se um item já tem um "aditivo" separado na tabela de Custos (ex: ADITIVO BUFFET), não marque os dois como "Por pessoa" ao mesmo tempo — vai contar a pessoa duas vezes. Marque só o item original, e deixe o aditivo desmarcado.
+      <br><strong>Atenção:</strong> se um item já tem um "aditivo" separado na tabela de Custos (ex: ADITIVO BUFFET), marque o item original como "Por pessoa" e <strong>desative o aditivo</strong> na coluna "Ativo" — assim ele não entra na conta e ninguém é contado duas vezes. O "Ativo" desliga o item só nessa simulação, sem mexer nos dados reais de Custos.
     </p>
     <div class="sim-intro">
       <label for="sim-pessoas" style="font-size:12px;font-weight:600;color:#333">Simular com quantas pessoas confirmadas?</label>
@@ -240,8 +240,8 @@ textarea:focus{outline:none;border-color:#888}
     </div>
     <table class="cost-tbl sim-tbl" style="margin-top:14px;font-size:13px">
       <thead><tr>
-        <th style="width:34%">Item</th><th style="width:18%;text-align:center">Por pessoa?</th>
-        <th style="width:24%">Qtd × Unit.</th><th style="width:24%">Total simulado</th>
+        <th style="width:10%;text-align:center">Ativo</th><th style="width:28%">Item</th><th style="width:16%;text-align:center">Por pessoa?</th>
+        <th style="width:23%">Qtd × Unit.</th><th style="width:23%">Total simulado</th>
       </tr></thead>
       <tbody id="sim-body"></tbody>
     </table>
@@ -523,6 +523,13 @@ function renderView() {
 }
 
 let simPessoasIniciado = false;
+let simDesativados = new Set();
+
+function toggleSimAtivo(id) {
+  if (simDesativados.has(id)) simDesativados.delete(id);
+  else simDesativados.add(id);
+  renderSimulacao();
+}
 
 function renderSimulacao() {
   const tbody = document.getElementById('sim-body'); if (!tbody) return;
@@ -537,13 +544,15 @@ function renderSimulacao() {
   let totalSimulado = 0;
   tbody.innerHTML = state.custos.map((c,i) => {
     const porPessoa = !!c.por_pessoa;
-    const totalItem = porPessoa ? pessoasSim * c.unit : c.qtd * c.unit;
+    const ativo = !simDesativados.has(c.id);
+    const totalItem = ativo ? (porPessoa ? pessoasSim * c.unit : c.qtd * c.unit) : 0;
     totalSimulado += totalItem;
-    return `<tr>
-      <td>${c.nome}</td>
-      <td style="text-align:center"><input type="checkbox" ${porPessoa?'checked':''} onchange="updateCusto(${i},'por_pessoa',this.checked);renderSimulacao()"></td>
+    return `<tr style="${ativo?'':'opacity:.4'}">
+      <td style="text-align:center"><input type="checkbox" ${ativo?'checked':''} onchange="toggleSimAtivo(${c.id})" title="Incluir esse item na simulação"></td>
+      <td style="${ativo?'':'text-decoration:line-through'}">${c.nome}</td>
+      <td style="text-align:center"><input type="checkbox" ${porPessoa?'checked':''} ${ativo?'':'disabled'} onchange="updateCusto(${i},'por_pessoa',this.checked);renderSimulacao()"></td>
       <td style="font-size:11px;color:#888">${porPessoa ? fmtBRL(c.unit)+' × pessoa' : c.qtd+' × '+fmtBRL(c.unit)}</td>
-      <td style="font-weight:600">${fmtBRL(totalItem)}</td>
+      <td style="font-weight:600">${ativo ? fmtBRL(totalItem) : '—'}</td>
     </tr>`;
   }).join('');
 
