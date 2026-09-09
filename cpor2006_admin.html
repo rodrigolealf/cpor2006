@@ -58,6 +58,11 @@ textarea:focus{outline:none;border-color:#888}
 .receb-total-card{background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:10px 14px;flex:1;min-width:110px}
 .receb-total-card .lbl{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px}
 .receb-total-card .val{font-size:16px;font-weight:600}
+.receb-filtros{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.receb-filtro-btn{padding:5px 13px;border:1px solid #ddd;border-radius:16px;background:#fff;font-size:11px;font-weight:600;color:#555;cursor:pointer}
+.receb-filtro-btn.active{background:#111;color:#fff;border-color:#111}
+.receb-filtro-resumo{display:none;gap:18px;padding:8px 14px;background:#f5f5f5;border:1px solid #e5e5e5;border-radius:8px;font-size:12px;color:#555;margin-bottom:10px;flex-wrap:wrap}
+.receb-filtro-resumo strong{color:#111}
 .receb-table{width:100%;min-width:680px;border-collapse:collapse;font-size:12px}
 .receb-table th{background:#f5f5f5;font-size:10px;font-weight:600;color:#555;text-align:left;padding:8px;border:1px solid #e0e0e0;text-transform:uppercase;letter-spacing:.4px}
 .receb-table td{padding:7px 8px;border-bottom:1px solid #f0f0f0;vertical-align:middle}
@@ -189,6 +194,7 @@ textarea:focus{outline:none;border-color:#888}
     <button class="vtab active" onclick="switchTab('cursos',this)">Por curso</button>
     <button class="vtab" onclick="switchTab('receb',this)">Recebimentos</button>
     <button class="vtab" onclick="switchTab('custos',this)">Custos</button>
+    <button class="vtab" onclick="switchTab('sim',this)">Simulação</button>
   </div>
   <div id="tab-cursos" class="vsection active">
     <div class="loading" id="loading-msg">Carregando...</div>
@@ -196,6 +202,8 @@ textarea:focus{outline:none;border-color:#888}
   </div>
   <div id="tab-receb" class="vsection">
     <div class="receb-totais" id="receb-totais"></div>
+    <div class="receb-filtros" id="receb-filtros"></div>
+    <div class="receb-filtro-resumo" id="receb-filtro-resumo"></div>
     <div style="overflow-x:auto">
       <table class="receb-table">
         <thead><tr>
@@ -220,6 +228,24 @@ textarea:focus{outline:none;border-color:#888}
       <span style="font-size:13px;color:#666">Saldo restante</span>
       <span style="font-size:18px;font-weight:600" id="saldo-view">R$ 0</span>
     </div>
+  </div>
+  <div id="tab-sim" class="vsection">
+    <p style="font-size:12px;color:#666;margin-bottom:12px">
+      Simule o resultado financeiro pra um número diferente de pessoas confirmadas. Marque "Por pessoa" nos itens que escalam com a quantidade (ex: buffet, brindes) — os demais ficam com o valor fixo já cadastrado.
+      <br><strong>Atenção:</strong> se um item já tem um "aditivo" separado na tabela de Custos (ex: ADITIVO BUFFET), não marque os dois como "Por pessoa" ao mesmo tempo — vai contar a pessoa duas vezes. Marque só o item original, e deixe o aditivo desmarcado.
+    </p>
+    <div class="sim-intro">
+      <label for="sim-pessoas" style="font-size:12px;font-weight:600;color:#333">Simular com quantas pessoas confirmadas?</label>
+      <input type="number" id="sim-pessoas" min="0" oninput="renderSimulacao()" style="width:100px;padding:6px 8px;font-size:14px;border:1px solid #ddd;border-radius:6px;margin-left:8px">
+    </div>
+    <table class="cost-tbl sim-tbl" style="margin-top:14px;font-size:13px">
+      <thead><tr>
+        <th style="width:34%">Item</th><th style="width:18%;text-align:center">Por pessoa?</th>
+        <th style="width:24%">Qtd × Unit.</th><th style="width:24%">Total simulado</th>
+      </tr></thead>
+      <tbody id="sim-body"></tbody>
+    </table>
+    <div id="sim-resumo"></div>
   </div>
 
 </div>
@@ -390,6 +416,13 @@ function renderCursos() {
   }).join('');
 }
 
+let recebFiltro = 'todos';
+
+function filtrarReceb(f) {
+  recebFiltro = f;
+  renderReceb();
+}
+
 function renderReceb() {
   const arr  = totalArr();
   const quit = state.pessoas.filter(p => p.pago>=COTA).length;
@@ -402,16 +435,42 @@ function renderReceb() {
     <div class="receb-total-card"><div class="lbl">Quitados</div><div class="val green">${quit}</div></div>
     <div class="receb-total-card"><div class="lbl">Parciais</div><div class="val amber">${parc}</div></div>
     <div class="receb-total-card"><div class="lbl">Pendentes</div><div class="val" style="color:#aaa">${pend}</div></div>`;
+
+  const FILTROS_RECEB = {
+    todos:     { label: 'Todos',      fn: p => true },
+    quitados:  { label: 'Quitados',   fn: p => p.pago >= COTA },
+    parciais:  { label: 'Parciais',   fn: p => p.pago > 0 && p.pago < COTA },
+    pendentes: { label: 'Pendentes',  fn: p => p.pago === 0 }
+  };
+  const filtroFn = FILTROS_RECEB[recebFiltro].fn;
+
+  document.getElementById('receb-filtros').innerHTML = Object.keys(FILTROS_RECEB).map(f =>
+    `<button class="receb-filtro-btn${f===recebFiltro?' active':''}" onclick="filtrarReceb('${f}')">${FILTROS_RECEB[f].label}</button>`
+  ).join('');
+
+  const resumoEl = document.getElementById('receb-filtro-resumo');
+  if (recebFiltro === 'todos') {
+    resumoEl.style.display = 'none';
+  } else {
+    const filtrados = state.pessoas.filter(filtroFn);
+    const totalPagoFiltro = filtrados.reduce((a,p) => a + p.pago, 0);
+    const totalFaltaFiltro = filtrados.reduce((a,p) => a + Math.max(0, COTA - p.pago), 0);
+    resumoEl.style.display = 'flex';
+    resumoEl.innerHTML = `<span>${filtrados.length} pessoa${filtrados.length===1?'':'s'}</span>` +
+      `<span>Pago: <strong>${fmtBRL(totalPagoFiltro)}</strong></span>` +
+      `<span>Falta: <strong style="color:${totalFaltaFiltro>0?'#dc2626':'#16a34a'}">${fmtBRL(totalFaltaFiltro)}</strong></span>`;
+  }
+
   // Ordena: pagantes com data (mais recente primeiro), pagantes sem data, pendentes
-  const comData = state.pessoas.filter(p=>p.pago>0 && p.data_pagamento).sort((a,b)=>{
+  const comData = state.pessoas.filter(p=>p.pago>0 && p.data_pagamento && filtroFn(p)).sort((a,b)=>{
     try {
       const [da,ma,ya]=a.data_pagamento.split('/').map(Number);
       const [db,mb,yb]=b.data_pagamento.split('/').map(Number);
       return new Date(yb,mb-1,db) - new Date(ya,ma-1,da);
     } catch(e) { return 0; }
   });
-  const semData = state.pessoas.filter(p=>p.pago>0 && !p.data_pagamento);
-  const pendLista = state.pessoas.filter(p=>p.pago===0);
+  const semData = state.pessoas.filter(p=>p.pago>0 && !p.data_pagamento && filtroFn(p));
+  const pendLista = state.pessoas.filter(p=>p.pago===0 && filtroFn(p));
   const sorted  = [...comData,...semData,...pendLista];
   document.getElementById('receb-body').innerHTML = sorted.map((p,i) => {
     const falta = Math.max(0, COTA-p.pago);
@@ -460,6 +519,58 @@ function renderView() {
   if (currentTab==='cursos') renderCursos();
   else if (currentTab==='receb') renderReceb();
   else if (currentTab==='custos') renderCustosView();
+  else if (currentTab==='sim') renderSimulacao();
+}
+
+let simPessoasIniciado = false;
+
+function renderSimulacao() {
+  const tbody = document.getElementById('sim-body'); if (!tbody) return;
+  const inputEl = document.getElementById('sim-pessoas');
+  if (!simPessoasIniciado) {
+    const confirmadosAtual = state.pessoas.filter(p => p.pago > 0).length;
+    if (inputEl) inputEl.value = confirmadosAtual;
+    simPessoasIniciado = true;
+  }
+  const pessoasSim = inputEl ? (+inputEl.value || 0) : 0;
+
+  let totalSimulado = 0;
+  tbody.innerHTML = state.custos.map((c,i) => {
+    const porPessoa = !!c.por_pessoa;
+    const totalItem = porPessoa ? pessoasSim * c.unit : c.qtd * c.unit;
+    totalSimulado += totalItem;
+    return `<tr>
+      <td>${c.nome}</td>
+      <td style="text-align:center"><input type="checkbox" ${porPessoa?'checked':''} onchange="updateCusto(${i},'por_pessoa',this.checked);renderSimulacao()"></td>
+      <td style="font-size:11px;color:#888">${porPessoa ? fmtBRL(c.unit)+' × pessoa' : c.qtd+' × '+fmtBRL(c.unit)}</td>
+      <td style="font-weight:600">${fmtBRL(totalItem)}</td>
+    </tr>`;
+  }).join('');
+
+  const sobra2025 = 952;
+  const receitaSimulada = pessoasSim * COTA;
+  const saldoSimulado = receitaSimulada + sobra2025 - totalSimulado;
+  const cor = saldoSimulado >= 0 ? '#16a34a' : '#dc2626';
+  const bg  = saldoSimulado >= 0 ? '#f0fdf4' : '#fef2f2';
+  const bd  = saldoSimulado >= 0 ? '#bbf7d0' : '#fecaca';
+
+  document.getElementById('sim-resumo').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px">
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 14px">
+        <div style="font-size:9px;color:#16a34a;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Receita simulada</div>
+        <div style="font-size:18px;font-weight:700;color:#16a34a">${fmtBRL(receitaSimulada)}</div>
+        <div style="font-size:9px;color:#888;margin-top:2px">${pessoasSim} pessoas × R$${COTA}</div>
+      </div>
+      <div style="background:#f5f5f5;border:1px solid #e0e0e0;border-radius:8px;padding:10px 14px">
+        <div style="font-size:9px;color:#111;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Custo total simulado</div>
+        <div style="font-size:18px;font-weight:700;color:#111">${fmtBRL(totalSimulado)}</div>
+      </div>
+    </div>
+    <div style="background:${bg};border:1px solid ${bd};border-radius:8px;padding:12px 16px;margin-top:8px">
+      <div style="font-size:9px;color:${cor};text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Saldo simulado</div>
+      <div style="font-size:22px;font-weight:700;color:${cor}">${fmtBRL(saldoSimulado)}</div>
+      <div style="font-size:9px;color:#888;margin-top:2px">(receita simulada + sobra − custo total simulado)</div>
+    </div>`;
 }
 
 
