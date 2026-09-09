@@ -83,7 +83,13 @@ textarea:focus{outline:none;border-color:#888}
 .view-tabs{display:flex;margin-bottom:1.25rem;border-bottom:1px solid #e0e0e0;overflow-x:auto}
 .vtab{padding:8px 14px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:none;color:#888;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
 .vtab.active{color:#111;border-bottom:2px solid #111}
-.vsection{display:none}.vsection.active{display:block}
+.vsection{display:none}
+.vsection.active{display:block;background:#fff;border:1px solid #e0e0e0;border-radius:14px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.vsection-title{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;color:#111;text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid #f0f0f0}
+.sim-header{display:flex;align-items:center;gap:12px;margin-bottom:4px;padding-bottom:16px;border-bottom:2px solid #f0f0f0}
+.sim-header-icon{font-size:30px;line-height:1}
+.sim-header-title{font-size:21px;font-weight:800;color:#111;letter-spacing:.5px}
+.sim-header-sub{font-size:12px;color:#888;margin-top:2px}
 .sect-label{font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
 .loading{text-align:center;padding:2rem;color:#888;font-size:13px}
 .saldo-anterior{background:#fff;border:1px solid #e0e0e0;border-radius:8px;padding:10px 14px;margin-bottom:1.25rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
@@ -197,10 +203,12 @@ textarea:focus{outline:none;border-color:#888}
     <button class="vtab" onclick="switchTab('sim',this)">Simulação</button>
   </div>
   <div id="tab-cursos" class="vsection active">
+    <div class="vsection-title">📋 Por Curso</div>
     <div class="loading" id="loading-msg">Carregando...</div>
     <div class="cursos-grid" id="cursos-grid" style="display:none"></div>
   </div>
   <div id="tab-receb" class="vsection">
+    <div class="vsection-title">💰 Recebimentos</div>
     <div class="receb-totais" id="receb-totais"></div>
     <div class="receb-filtros" id="receb-filtros"></div>
     <div class="receb-filtro-resumo" id="receb-filtro-resumo"></div>
@@ -217,6 +225,7 @@ textarea:focus{outline:none;border-color:#888}
     </div>
   </div>
   <div id="tab-custos" class="vsection">
+    <div class="vsection-title">🧾 Custos</div>
     <table class="cost-tbl" style="font-size:13px">
       <thead><tr>
         <th style="width:35%">Fornecedor</th><th style="width:12%">Qtd</th>
@@ -230,21 +239,30 @@ textarea:focus{outline:none;border-color:#888}
     </div>
   </div>
   <div id="tab-sim" class="vsection">
+    <div class="sim-header">
+      <div class="sim-header-icon">🎯</div>
+      <div>
+        <div class="sim-header-title">SIMULAÇÃO</div>
+        <div class="sim-header-sub">Churrasco 20 Anos · CPOR Turma 2006</div>
+      </div>
+    </div>
     <p style="font-size:12px;color:#666;margin-bottom:12px">
       Simule o resultado financeiro pra um número diferente de pessoas confirmadas. Marque "Por pessoa" nos itens que escalam com a quantidade (ex: buffet, brindes) — os demais ficam com o valor fixo já cadastrado.
       <br><strong>Atenção:</strong> se um item já tem um "aditivo" separado na tabela de Custos (ex: ADITIVO BUFFET), marque o item original como "Por pessoa" e <strong>desative o aditivo</strong> na coluna "Ativo" — assim ele não entra na conta e ninguém é contado duas vezes. O "Ativo" desliga o item só nessa simulação, sem mexer nos dados reais de Custos.
+      <br>Use <strong>"+ Item simulado"</strong> pra testar um item novo (ex: camisa a R$65/pessoa) sem criar ele de verdade na tabela de Custos — é só um teste, some se você recarregar a página.
     </p>
-    <div class="sim-intro">
-      <label for="sim-pessoas" style="font-size:12px;font-weight:600;color:#333">Simular com quantas pessoas confirmadas?</label>
-      <input type="number" id="sim-pessoas" min="0" oninput="renderSimulacao()" style="width:100px;padding:6px 8px;font-size:14px;border:1px solid #ddd;border-radius:6px;margin-left:8px">
+    <div class="sim-intro" style="background:#f7f7f7;border:1px solid #e5e5e5;border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <label for="sim-pessoas" style="font-size:13px;font-weight:600;color:#333">Simular com quantas pessoas confirmadas?</label>
+      <input type="number" id="sim-pessoas" min="0" oninput="renderSimulacao()" style="width:100px;padding:7px 10px;font-size:15px;font-weight:600;border:1px solid #ccc;border-radius:6px">
     </div>
     <table class="cost-tbl sim-tbl" style="margin-top:14px;font-size:13px">
       <thead><tr>
-        <th style="width:10%;text-align:center">Ativo</th><th style="width:28%">Item</th><th style="width:16%;text-align:center">Por pessoa?</th>
-        <th style="width:23%">Qtd × Unit.</th><th style="width:23%">Total simulado</th>
+        <th style="width:9%;text-align:center">Ativo</th><th style="width:27%">Item</th><th style="width:15%;text-align:center">Por pessoa?</th>
+        <th style="width:22%">Qtd × Unit.</th><th style="width:20%">Total simulado</th><th style="width:7%"></th>
       </tr></thead>
       <tbody id="sim-body"></tbody>
     </table>
+    <button class="btn" style="margin-top:8px;font-size:12px" onclick="addSimExtra()">+ Item simulado</button>
     <div id="sim-resumo"></div>
   </div>
 
@@ -524,6 +542,25 @@ function renderView() {
 
 let simPessoasIniciado = false;
 let simDesativados = new Set();
+let simExtras = [];
+let simExtraSeq = 0;
+
+function addSimExtra() {
+  simExtraSeq++;
+  simExtras.push({ id: 'extra-' + simExtraSeq, nome: 'Novo item (teste)', qtd: 1, unit: 0, por_pessoa: true, ativo: true });
+  renderSimulacao();
+}
+
+function updateSimExtra(id, campo, valor) {
+  const it = simExtras.find(e => e.id === id);
+  if (it) it[campo] = valor;
+  renderSimulacao();
+}
+
+function removeSimExtra(id) {
+  simExtras = simExtras.filter(e => e.id !== id);
+  renderSimulacao();
+}
 
 function toggleSimAtivo(id) {
   if (simDesativados.has(id)) simDesativados.delete(id);
@@ -553,6 +590,21 @@ function renderSimulacao() {
       <td style="text-align:center"><input type="checkbox" ${porPessoa?'checked':''} ${ativo?'':'disabled'} onchange="updateCusto(${i},'por_pessoa',this.checked);renderSimulacao()"></td>
       <td style="font-size:11px;color:#888">${porPessoa ? fmtBRL(c.unit)+' × pessoa' : c.qtd+' × '+fmtBRL(c.unit)}</td>
       <td style="font-weight:600">${ativo ? fmtBRL(totalItem) : '—'}</td>
+      <td></td>
+    </tr>`;
+  }).join('') + simExtras.map(e => {
+    const totalItem = e.ativo ? (e.por_pessoa ? pessoasSim * e.unit : e.qtd * e.unit) : 0;
+    totalSimulado += totalItem;
+    const qtdUnitHTML = e.por_pessoa
+      ? `<input type="text" inputmode="numeric" value="${fmtBRLInput(e.unit||0)}" style="width:78px;border:1px solid #ddd;border-radius:4px;padding:3px 5px;font-size:11px" oninput="maskMoneyInput(this)" onchange="updateSimExtra('${e.id}','unit',parseMoneyInput(this.value))"> × pessoa`
+      : `<input type="number" value="${e.qtd}" min="0" style="width:42px;border:1px solid #ddd;border-radius:4px;padding:3px 4px;font-size:11px" onchange="updateSimExtra('${e.id}','qtd',+this.value)"> × <input type="text" inputmode="numeric" value="${fmtBRLInput(e.unit||0)}" style="width:70px;border:1px solid #ddd;border-radius:4px;padding:3px 5px;font-size:11px" oninput="maskMoneyInput(this)" onchange="updateSimExtra('${e.id}','unit',parseMoneyInput(this.value))">`;
+    return `<tr style="background:#fffbeb;${e.ativo?'':'opacity:.4'}">
+      <td style="text-align:center"><input type="checkbox" ${e.ativo?'checked':''} onchange="updateSimExtra('${e.id}','ativo',this.checked)" title="Incluir esse item na simulação"></td>
+      <td><input type="text" value="${e.nome}" style="width:100%;border:1px solid #ddd;border-radius:4px;padding:3px 6px;font-size:12px;${e.ativo?'':'text-decoration:line-through'}" onchange="updateSimExtra('${e.id}','nome',this.value)"></td>
+      <td style="text-align:center"><input type="checkbox" ${e.por_pessoa?'checked':''} ${e.ativo?'':'disabled'} onchange="updateSimExtra('${e.id}','por_pessoa',this.checked)"></td>
+      <td style="font-size:11px;color:#888">${qtdUnitHTML}</td>
+      <td style="font-weight:600">${e.ativo ? fmtBRL(totalItem) : '—'}</td>
+      <td><button class="btn" style="padding:2px 6px;font-size:11px;color:#dc2626" onclick="removeSimExtra('${e.id}')">✕</button></td>
     </tr>`;
   }).join('');
 
