@@ -249,7 +249,7 @@ textarea:focus{outline:none;border-color:#888}
     </div>
     <div class="sim-intro" style="background:#f7f7f7;border:1px solid #e5e5e5;border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       <label for="sim-pessoas" style="font-size:13px;font-weight:600;color:#333">Simular com quantas pessoas confirmadas?</label>
-      <input type="number" id="sim-pessoas" min="0" oninput="renderSimulacao()" style="width:100px;padding:7px 10px;font-size:15px;font-weight:600;border:1px solid #ccc;border-radius:6px">
+      <input type="number" id="sim-pessoas" min="0" oninput="renderSimulacao();agendarSalvarSimulacao()" style="width:100px;padding:7px 10px;font-size:15px;font-weight:600;border:1px solid #ccc;border-radius:6px">
     </div>
     <table class="cost-tbl sim-tbl" style="margin-top:14px;font-size:13px">
       <thead><tr>
@@ -335,12 +335,14 @@ async function supaFetch(table, method='GET', body=null, filter='') {
 
 async function loadData() {
   try {
-    const [pessoas, custos] = await Promise.all([
+    const [pessoas, custos, simulacao] = await Promise.all([
       supaFetch('pessoas', 'GET', null, '?order=nome'),
-      supaFetch('custos', 'GET', null, '?order=id')
+      supaFetch('custos', 'GET', null, '?order=id'),
+      supaFetch('simulacao', 'GET', null, '?id=eq.1')
     ]);
     state.pessoas = pessoas || [];
     state.custos  = custos  || [];
+    state.simulacaoSalva = (simulacao && simulacao[0]) || null;
   } catch(e) {
     const m = document.getElementById('loading-msg');
     if (m) { m.textContent = 'Erro ao carregar: ' + e.message; m.style.color='#dc2626'; }
@@ -542,41 +544,64 @@ function renderView() {
 let simPessoasIniciado = false;
 let simItens = null;
 let simItemSeq = 0;
+let simSaveTimeout = null;
 
 function copiaCustosParaSim() {
   return state.custos.map(c => ({ id: c.id, nome: c.nome, qtd: c.qtd, unit: c.unit, por_pessoa: !!c.por_pessoa, ativo: true }));
 }
 
+function agendarSalvarSimulacao() {
+  clearTimeout(simSaveTimeout);
+  simSaveTimeout = setTimeout(salvarSimulacaoAgora, 600);
+}
+
+async function salvarSimulacaoAgora() {
+  const inputEl = document.getElementById('sim-pessoas');
+  const pessoasSim = inputEl ? (+inputEl.value || 0) : 0;
+  try {
+    await supaFetch('simulacao', 'PATCH', { pessoas: pessoasSim, itens: simItens, updated_at: new Date().toISOString() }, '?id=eq.1');
+  } catch(e) { console.error('Erro ao salvar simulação:', e); }
+}
+
 function resetSimulacao() {
   simItens = copiaCustosParaSim();
   renderSimulacao();
+  agendarSalvarSimulacao();
 }
 
 function addSimItem() {
   simItemSeq++;
   simItens.push({ id: 'novo-' + simItemSeq, nome: 'Novo item', qtd: 1, unit: 0, por_pessoa: true, ativo: true });
   renderSimulacao();
+  agendarSalvarSimulacao();
 }
 
 function updateSimItem(id, campo, valor) {
-  const it = simItens.find(e => e.id === id);
+  const it = simItens.find(e => String(e.id) === String(id));
   if (it) it[campo] = valor;
   renderSimulacao();
+  agendarSalvarSimulacao();
 }
 
 function removeSimItem(id) {
-  simItens = simItens.filter(e => e.id !== id);
+  simItens = simItens.filter(e => String(e.id) !== String(id));
   renderSimulacao();
+  agendarSalvarSimulacao();
 }
 
 function renderSimulacao() {
   const tbody = document.getElementById('sim-body'); if (!tbody) return;
-  if (simItens === null) simItens = copiaCustosParaSim();
+  if (simItens === null) {
+    const salva = state.simulacaoSalva;
+    simItens = (salva && Array.isArray(salva.itens) && salva.itens.length) ? salva.itens : copiaCustosParaSim();
+  }
 
   const inputEl = document.getElementById('sim-pessoas');
   if (!simPessoasIniciado) {
+    const salva = state.simulacaoSalva;
     const confirmadosAtual = state.pessoas.filter(p => p.pago > 0).length;
-    if (inputEl) inputEl.value = confirmadosAtual;
+    const valorInicial = (salva && salva.pessoas > 0) ? salva.pessoas : confirmadosAtual;
+    if (inputEl) inputEl.value = valorInicial;
     simPessoasIniciado = true;
   }
   const pessoasSim = inputEl ? (+inputEl.value || 0) : 0;
