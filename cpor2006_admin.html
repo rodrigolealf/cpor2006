@@ -258,7 +258,10 @@ textarea:focus{outline:none;border-color:#888}
       </tr></thead>
       <tbody id="sim-body"></tbody>
     </table>
-    <button class="btn" style="margin-top:8px;font-size:12px" onclick="addSimExtra()">+ Item simulado</button>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn" style="font-size:12px" onclick="addSimItem()">+ Item</button>
+      <button class="btn" style="font-size:12px" onclick="resetSimulacao()">↺ Restaurar valores reais</button>
+    </div>
     <div id="sim-resumo"></div>
   </div>
 
@@ -537,35 +540,39 @@ function renderView() {
 }
 
 let simPessoasIniciado = false;
-let simDesativados = new Set();
-let simExtras = [];
-let simExtraSeq = 0;
+let simItens = null;
+let simItemSeq = 0;
 
-function addSimExtra() {
-  simExtraSeq++;
-  simExtras.push({ id: 'extra-' + simExtraSeq, nome: 'Novo item (teste)', qtd: 1, unit: 0, por_pessoa: true, ativo: true });
+function copiaCustosParaSim() {
+  return state.custos.map(c => ({ id: c.id, nome: c.nome, qtd: c.qtd, unit: c.unit, por_pessoa: !!c.por_pessoa, ativo: true }));
+}
+
+function resetSimulacao() {
+  simItens = copiaCustosParaSim();
   renderSimulacao();
 }
 
-function updateSimExtra(id, campo, valor) {
-  const it = simExtras.find(e => e.id === id);
+function addSimItem() {
+  simItemSeq++;
+  simItens.push({ id: 'novo-' + simItemSeq, nome: 'Novo item', qtd: 1, unit: 0, por_pessoa: true, ativo: true });
+  renderSimulacao();
+}
+
+function updateSimItem(id, campo, valor) {
+  const it = simItens.find(e => e.id === id);
   if (it) it[campo] = valor;
   renderSimulacao();
 }
 
-function removeSimExtra(id) {
-  simExtras = simExtras.filter(e => e.id !== id);
-  renderSimulacao();
-}
-
-function toggleSimAtivo(id) {
-  if (simDesativados.has(id)) simDesativados.delete(id);
-  else simDesativados.add(id);
+function removeSimItem(id) {
+  simItens = simItens.filter(e => e.id !== id);
   renderSimulacao();
 }
 
 function renderSimulacao() {
   const tbody = document.getElementById('sim-body'); if (!tbody) return;
+  if (simItens === null) simItens = copiaCustosParaSim();
+
   const inputEl = document.getElementById('sim-pessoas');
   if (!simPessoasIniciado) {
     const confirmadosAtual = state.pessoas.filter(p => p.pago > 0).length;
@@ -575,32 +582,19 @@ function renderSimulacao() {
   const pessoasSim = inputEl ? (+inputEl.value || 0) : 0;
 
   let totalSimulado = 0;
-  tbody.innerHTML = state.custos.map((c,i) => {
-    const porPessoa = !!c.por_pessoa;
-    const ativo = !simDesativados.has(c.id);
-    const totalItem = ativo ? (porPessoa ? pessoasSim * c.unit : c.qtd * c.unit) : 0;
+  tbody.innerHTML = simItens.map(it => {
+    const totalItem = it.ativo ? (it.por_pessoa ? pessoasSim * it.unit : it.qtd * it.unit) : 0;
     totalSimulado += totalItem;
-    return `<tr style="${ativo?'':'opacity:.4'}">
-      <td style="text-align:center"><input type="checkbox" ${ativo?'checked':''} onchange="toggleSimAtivo(${c.id})" title="Incluir esse item na simulação"></td>
-      <td style="${ativo?'':'text-decoration:line-through'}">${c.nome}</td>
-      <td style="text-align:center"><input type="checkbox" ${porPessoa?'checked':''} ${ativo?'':'disabled'} onchange="updateCusto(${i},'por_pessoa',this.checked);renderSimulacao()"></td>
-      <td style="font-size:11px;color:#888">${porPessoa ? fmtBRL(c.unit)+' × pessoa' : c.qtd+' × '+fmtBRL(c.unit)}</td>
-      <td style="font-weight:600">${ativo ? fmtBRL(totalItem) : '—'}</td>
-      <td></td>
-    </tr>`;
-  }).join('') + simExtras.map(e => {
-    const totalItem = e.ativo ? (e.por_pessoa ? pessoasSim * e.unit : e.qtd * e.unit) : 0;
-    totalSimulado += totalItem;
-    const qtdUnitHTML = e.por_pessoa
-      ? `<input type="text" inputmode="numeric" value="${fmtBRLInput(e.unit||0)}" style="width:78px;border:1px solid #ddd;border-radius:4px;padding:3px 5px;font-size:11px" oninput="maskMoneyInput(this)" onchange="updateSimExtra('${e.id}','unit',parseMoneyInput(this.value))"> × pessoa`
-      : `<input type="number" value="${e.qtd}" min="0" style="width:42px;border:1px solid #ddd;border-radius:4px;padding:3px 4px;font-size:11px" onchange="updateSimExtra('${e.id}','qtd',+this.value)"> × <input type="text" inputmode="numeric" value="${fmtBRLInput(e.unit||0)}" style="width:70px;border:1px solid #ddd;border-radius:4px;padding:3px 5px;font-size:11px" oninput="maskMoneyInput(this)" onchange="updateSimExtra('${e.id}','unit',parseMoneyInput(this.value))">`;
-    return `<tr style="background:#fffbeb;${e.ativo?'':'opacity:.4'}">
-      <td style="text-align:center"><input type="checkbox" ${e.ativo?'checked':''} onchange="updateSimExtra('${e.id}','ativo',this.checked)" title="Incluir esse item na simulação"></td>
-      <td><input type="text" value="${e.nome}" style="width:100%;border:1px solid #ddd;border-radius:4px;padding:3px 6px;font-size:12px;${e.ativo?'':'text-decoration:line-through'}" onchange="updateSimExtra('${e.id}','nome',this.value)"></td>
-      <td style="text-align:center"><input type="checkbox" ${e.por_pessoa?'checked':''} ${e.ativo?'':'disabled'} onchange="updateSimExtra('${e.id}','por_pessoa',this.checked)"></td>
+    const qtdUnitHTML = it.por_pessoa
+      ? `<input type="text" inputmode="numeric" value="${fmtBRLInput(it.unit||0)}" style="width:78px;border:1px solid #ddd;border-radius:4px;padding:3px 5px;font-size:11px" oninput="maskMoneyInput(this)" onchange="updateSimItem('${it.id}','unit',parseMoneyInput(this.value))"> × pessoa`
+      : `<input type="number" value="${it.qtd}" min="0" style="width:42px;border:1px solid #ddd;border-radius:4px;padding:3px 4px;font-size:11px" onchange="updateSimItem('${it.id}','qtd',+this.value)"> × <input type="text" inputmode="numeric" value="${fmtBRLInput(it.unit||0)}" style="width:70px;border:1px solid #ddd;border-radius:4px;padding:3px 5px;font-size:11px" oninput="maskMoneyInput(this)" onchange="updateSimItem('${it.id}','unit',parseMoneyInput(this.value))">`;
+    return `<tr style="${it.ativo?'':'opacity:.4'}">
+      <td style="text-align:center"><input type="checkbox" ${it.ativo?'checked':''} onchange="updateSimItem('${it.id}','ativo',this.checked)" title="Incluir esse item na simulação"></td>
+      <td><input type="text" value="${it.nome}" style="width:100%;border:1px solid #ddd;border-radius:4px;padding:3px 6px;font-size:12px;${it.ativo?'':'text-decoration:line-through'}" onchange="updateSimItem('${it.id}','nome',this.value)"></td>
+      <td style="text-align:center"><input type="checkbox" ${it.por_pessoa?'checked':''} ${it.ativo?'':'disabled'} onchange="updateSimItem('${it.id}','por_pessoa',this.checked)"></td>
       <td style="font-size:11px;color:#888">${qtdUnitHTML}</td>
-      <td style="font-weight:600">${e.ativo ? fmtBRL(totalItem) : '—'}</td>
-      <td><button class="btn" style="padding:2px 6px;font-size:11px;color:#dc2626" onclick="removeSimExtra('${e.id}')">✕</button></td>
+      <td style="font-weight:600">${it.ativo ? fmtBRL(totalItem) : '—'}</td>
+      <td><button class="btn" style="padding:2px 6px;font-size:11px;color:#dc2626" onclick="removeSimItem('${it.id}')" title="Remover da simulação">✕</button></td>
     </tr>`;
   }).join('');
 
