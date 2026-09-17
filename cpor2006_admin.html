@@ -63,7 +63,7 @@ textarea:focus{outline:none;border-color:#888}
 .receb-filtro-btn.active{background:#111;color:#fff;border-color:#111}
 .receb-filtro-resumo{display:none;gap:18px;padding:8px 14px;background:#f5f5f5;border:1px solid #e5e5e5;border-radius:8px;font-size:12px;color:#555;margin-bottom:10px;flex-wrap:wrap}
 .receb-filtro-resumo strong{color:#111}
-.receb-table{width:100%;min-width:680px;border-collapse:collapse;font-size:12px}
+.receb-table{width:100%;min-width:750px;border-collapse:collapse;font-size:12px}
 .receb-table th{background:#f5f5f5;font-size:10px;font-weight:600;color:#555;text-align:left;padding:8px;border:1px solid #e0e0e0;text-transform:uppercase;letter-spacing:.4px}
 .receb-table td{padding:7px 8px;border-bottom:1px solid #f0f0f0;vertical-align:middle}
 .receb-table tr.quitado td{background:#f0fdf4}
@@ -218,7 +218,7 @@ textarea:focus{outline:none;border-color:#888}
         <thead><tr>
           <th style="width:28px">#</th><th>Nome</th><th style="width:80px">Curso</th>
           <th style="width:75px">Pago</th><th style="width:75px">Falta</th>
-          <th style="width:110px">Data pgto</th>
+          <th style="width:110px">Data pgto</th><th style="width:70px">Tamanho</th>
           <th style="width:90px">Progresso</th><th style="width:70px">Status</th><th style="width:36px"></th>
         </tr></thead>
         <tbody id="receb-body"></tbody>
@@ -506,6 +506,11 @@ function renderReceb() {
       <td><input type="text" value="${p.data_pagamento||''}" placeholder="dd/mm/aaaa"
         style="width:100%;min-width:82px;padding:3px 5px;font-size:11px;border:1px solid #ddd;border-radius:4px;background:${p.pago>0?'#fff':'#f9f9f9'}"
         onchange="updateDataPagamento(${p.id},this.value)"
+        ${p.pago===0?'disabled':''}>
+      </td>
+      <td><input type="text" value="${p.tamanho_camisa||''}" placeholder="M"
+        style="width:100%;min-width:52px;padding:3px 5px;font-size:11px;border:1px solid #ddd;border-radius:4px;text-align:center;background:${p.pago>0?'#fff':'#f9f9f9'}"
+        onchange="updateTamanho(${p.id},this.value)"
         ${p.pago===0?'disabled':''}>
       </td>
       <td><div style="font-size:10px;color:#999;margin-bottom:2px">${pct}%</div>
@@ -879,6 +884,14 @@ async function updateDataPagamento(id, data) {
   } catch(e) { console.error('updateData error:', e); }
 }
 
+async function updateTamanho(id, tamanho) {
+  try {
+    const p = state.pessoas.find(x => x.id === id);
+    if (p) p.tamanho_camisa = tamanho;
+    await supaFetch('pessoas', 'PATCH', {tamanho_camisa: tamanho}, `?id=eq.${id}`);
+  } catch(e) { console.error('updateTamanho error:', e); }
+}
+
 function renderAdmin() { renderSumCards('sum-admin'); renderCustos(); }
 function renderAll() { renderAdmin(); renderView(); }
 
@@ -923,7 +936,7 @@ function renderListaGrid() {
       return `<li class="${marcado?'':'unchecked'}">
         <label>
           <input type="checkbox" class="lista-check" ${marcado?'checked':''} onchange="toggleSelecionado(${p.id})">
-          <span>${p.nome} - ${nomeCurso}</span>
+          <span>${p.nome} - ${nomeCurso}${p.tamanho_camisa ? ' — Tam: ' + p.tamanho_camisa : ''}</span>
         </label>
       </li>`;
     }).join('');
@@ -1059,7 +1072,7 @@ function construirConteudoWord() {
     if (!membros.length) return null;
     totalGeral += membros.length;
     const linhas = membros.map(p =>
-      `<p style="margin:2px 0;font-size:12px;border-bottom:1px solid #eee;padding:2px 0">${p.nome} - ${nomeCurso}</p>`
+      `<p style="margin:2px 0;font-size:12px;border-bottom:1px solid #eee;padding:2px 0">${p.nome} - ${nomeCurso}${p.tamanho_camisa ? ' — Tam: ' + p.tamanho_camisa : ''}</p>`
     ).join('');
     return `<td style="width:50%;vertical-align:top;padding:6px">
       <div style="border:1px solid #ccc;border-radius:6px;padding:10px 14px;background:#fafafa">
