@@ -69,6 +69,7 @@ textarea:focus{outline:none;border-color:#888}
 .receb-table tr.quitado td{background:#f0fdf4}
 .receb-table tr.parcial td{background:#fffbeb}
 .receb-table tr.pendente td{color:#bbb}
+.receb-table tr.receb-curso-header td{background:#111;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:7px 10px}
 .badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600}
 .badge.ok{background:#dcfce7;color:#166534}
 .badge.half{background:#fef9c3;color:#854d0e}
@@ -491,7 +492,8 @@ function renderReceb() {
   const semData = state.pessoas.filter(p=>p.pago>0 && !p.data_pagamento && filtroFn(p));
   const pendLista = state.pessoas.filter(p=>p.pago===0 && filtroFn(p));
   const sorted  = [...comData,...semData,...pendLista];
-  document.getElementById('receb-body').innerHTML = sorted.map((p,i) => {
+
+  const construirLinhaReceb = (p, i) => {
     const falta = Math.max(0, COTA-p.pago);
     const pct   = Math.min(100, Math.round(p.pago/COTA*100));
     const rowCls = p.pago>=COTA?'quitado':p.pago>0?'parcial':'pendente';
@@ -518,7 +520,21 @@ function renderReceb() {
       <td>${badge}</td>
       <td><button onclick="editarPagamento(${p.id},'${p.nome}')" style="padding:3px 8px;font-size:10px;border:1px solid #ddd;border-radius:4px;background:#fff;cursor:pointer;color:#555">✏️</button></td>
     </tr>`;
-  }).join('');
+  };
+
+  let bodyHTML = '';
+  if (recebFiltro === 'quitados' || recebFiltro === 'parciais') {
+    // Agrupado por curso, mantendo a ordem por data mais recente dentro de cada curso
+    CURSOS.forEach(cid => {
+      const membros = sorted.filter(p => p.curso === cid);
+      if (!membros.length) return;
+      bodyHTML += `<tr class="receb-curso-header"><td colspan="10">${NOMES[cid]} (${membros.length})</td></tr>`;
+      bodyHTML += membros.map((p,i) => construirLinhaReceb(p,i)).join('');
+    });
+  } else {
+    bodyHTML = sorted.map((p,i) => construirLinhaReceb(p,i)).join('');
+  }
+  document.getElementById('receb-body').innerHTML = bodyHTML;
 }
 
 function renderCustosView() {
