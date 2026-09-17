@@ -606,22 +606,52 @@ function renderSimulacao() {
   }
   const pessoasSim = inputEl ? (+inputEl.value || 0) : 0;
 
-  let totalSimulado = 0;
   tbody.innerHTML = simItens.map(it => {
     const totalItem = it.ativo ? (it.por_pessoa ? pessoasSim * it.unit : it.qtd * it.unit) : 0;
-    totalSimulado += totalItem;
     const qtdUnitHTML = it.por_pessoa
-      ? `<input type="text" inputmode="numeric" value="${fmtBRLInput(it.unit||0)}" style="width:78px;border:1px solid #ddd;border-radius:4px;padding:3px 5px;font-size:11px" oninput="maskMoneyInput(this)" onchange="updateSimItem('${it.id}','unit',parseMoneyInput(this.value))"> × pessoa`
-      : `<input type="number" value="${it.qtd}" min="0" style="width:42px;border:1px solid #ddd;border-radius:4px;padding:3px 4px;font-size:11px" onchange="updateSimItem('${it.id}','qtd',+this.value)"> × <input type="text" inputmode="numeric" value="${fmtBRLInput(it.unit||0)}" style="width:70px;border:1px solid #ddd;border-radius:4px;padding:3px 5px;font-size:11px" oninput="maskMoneyInput(this)" onchange="updateSimItem('${it.id}','unit',parseMoneyInput(this.value))">`;
-    return `<tr style="${it.ativo?'':'opacity:.4'}">
+      ? `<input type="text" inputmode="numeric" class="sim-unit-in" value="${fmtBRLInput(it.unit||0)}" style="width:78px;border:1px solid #ddd;border-radius:4px;padding:3px 5px;font-size:11px" oninput="maskMoneyInput(this);previewSimItem('${it.id}')"> × pessoa`
+      : `<input type="number" class="sim-qtd-in" value="${it.qtd}" min="0" style="width:42px;border:1px solid #ddd;border-radius:4px;padding:3px 4px;font-size:11px" oninput="previewSimItem('${it.id}')"> × <input type="text" inputmode="numeric" class="sim-unit-in" value="${fmtBRLInput(it.unit||0)}" style="width:70px;border:1px solid #ddd;border-radius:4px;padding:3px 5px;font-size:11px" oninput="maskMoneyInput(this);previewSimItem('${it.id}')">`;
+    return `<tr data-simid="${it.id}" style="${it.ativo?'':'opacity:.4'}">
       <td style="text-align:center"><input type="checkbox" ${it.ativo?'checked':''} onchange="updateSimItem('${it.id}','ativo',this.checked)" title="Incluir esse item na simulação"></td>
-      <td><input type="text" value="${it.nome}" style="width:100%;border:1px solid #ddd;border-radius:4px;padding:3px 6px;font-size:12px;${it.ativo?'':'text-decoration:line-through'}" onchange="updateSimItem('${it.id}','nome',this.value)"></td>
+      <td><input type="text" class="sim-nome-in" value="${it.nome}" style="width:100%;border:1px solid #ddd;border-radius:4px;padding:3px 6px;font-size:12px;${it.ativo?'':'text-decoration:line-through'}" oninput="previewSimItem('${it.id}')"></td>
       <td style="text-align:center"><input type="checkbox" ${it.por_pessoa?'checked':''} ${it.ativo?'':'disabled'} onchange="updateSimItem('${it.id}','por_pessoa',this.checked)"></td>
       <td style="font-size:11px;color:#888">${qtdUnitHTML}</td>
-      <td style="font-weight:600">${it.ativo ? fmtBRL(totalItem) : '—'}</td>
+      <td class="sim-total-cell" style="font-weight:600">${it.ativo ? fmtBRL(totalItem) : '—'}</td>
       <td><button class="btn" style="padding:2px 6px;font-size:11px;color:#dc2626" onclick="removeSimItem('${it.id}')" title="Remover da simulação">✕</button></td>
     </tr>`;
   }).join('');
+
+  atualizarResumoSimulacao();
+}
+
+function previewSimItem(id) {
+  const it = simItens.find(e => String(e.id) === String(id));
+  if (!it) return;
+  const row = document.querySelector(`tr[data-simid="${CSS.escape(String(id))}"]`);
+  if (!row) return;
+
+  const nomeIn = row.querySelector('.sim-nome-in');
+  const qtdIn  = row.querySelector('.sim-qtd-in');
+  const unitIn = row.querySelector('.sim-unit-in');
+  if (nomeIn) it.nome = nomeIn.value;
+  if (qtdIn)  it.qtd  = (+qtdIn.value || 0);
+  if (unitIn) it.unit = parseMoneyInput(unitIn.value);
+
+  const inputEl = document.getElementById('sim-pessoas');
+  const pessoasSim = inputEl ? (+inputEl.value || 0) : 0;
+  const totalItem = it.ativo ? (it.por_pessoa ? pessoasSim * it.unit : it.qtd * it.unit) : 0;
+  const totalCell = row.querySelector('.sim-total-cell');
+  if (totalCell) totalCell.textContent = it.ativo ? fmtBRL(totalItem) : '—';
+
+  atualizarResumoSimulacao();
+  agendarSalvarSimulacao();
+}
+
+function atualizarResumoSimulacao() {
+  const inputEl = document.getElementById('sim-pessoas');
+  const pessoasSim = inputEl ? (+inputEl.value || 0) : 0;
+  let totalSimulado = 0;
+  simItens.forEach(it => { totalSimulado += it.ativo ? (it.por_pessoa ? pessoasSim*it.unit : it.qtd*it.unit) : 0; });
 
   const sobra2025 = 952;
   const receitaSimulada = pessoasSim * COTA;
