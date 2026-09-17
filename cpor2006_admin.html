@@ -510,7 +510,7 @@ function renderReceb() {
         onchange="updateDataPagamento(${p.id},this.value)"
         ${p.pago===0?'disabled':''}>
       </td>
-      <td><input type="text" value="${p.tamanho_camisa||''}" placeholder="M"
+      <td><input type="text" value="${p.tamanho_camisa||''}" placeholder=""
         style="width:100%;min-width:52px;padding:3px 5px;font-size:11px;border:1px solid #ddd;border-radius:4px;text-align:center;background:${p.pago>0?'#fff':'#f9f9f9'}"
         onchange="updateTamanho(${p.id},this.value)"
         ${p.pago===0?'disabled':''}>
