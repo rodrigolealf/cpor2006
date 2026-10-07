@@ -199,7 +199,7 @@ function render(pessoas) {
         <div class="cbar-fill" style="width:${pct}%; background: linear-gradient(to right, ${c.cor}66, ${c.cor}1a);"></div>
         <div class="sym"><img src="${c.img}" alt="${c.nome}"></div>
         <div class="cname">${medalhaDe(c.id) ? `<span class="medal">${medalhaDe(c.id)}</span>` : ''}${c.nome}</div>
-        <div class="cstats"><span class="n1">${cConf}</span><span class="n2"> / ${cTotal}</span><span class="pct" style="background:${c.cor}">${pct}%</span>${medalhaDe(c.id) === '🔦' ? '<span class="medal medal-pct">🔦</span>' : ''}</div>
+        <div class="cstats"><span class="n1">${cConf}</span><span class="n2"> / ${cTotal}</span><span class="pct" style="background:${c.cor}">${pct}%</span>${medalhaDe(c.id) ? `<span class="medal medal-pct">${medalhaDe(c.id)}</span>` : ''}</div>
       </div>
       <div class="cbody">
         <div class="conf">${confHTML}</div>
