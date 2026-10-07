@@ -35,11 +35,13 @@
   .card .foot { font-size: 9px; color: #a8a89f; margin-top: 1px; }
 
   .course { background: #fff; border-radius: 6px; margin-top: 4px; overflow: hidden; border-left: 3px solid #333; break-inside: avoid; }
-  .cbar { background: #1a2332; padding: 6px 12px; display: flex; align-items: center; gap: 11px; position: relative; }
+  .cbar { background: #1a2332; padding: 10px 12px; display: flex; align-items: center; gap: 11px; position: relative; }
   .cbar-fill { position: absolute; left: 0; top: 0; bottom: 0; pointer-events: none; }
   .sym { width: 28px; height: 28px; background: #fff; border-radius: 3px; padding: 2px; display: flex; align-items: center; justify-content: center; z-index: 1; flex-shrink: 0; }
   .sym img { width: 100%; height: 100%; object-fit: contain; }
-  .cname { color: #fff; font-size: 12px; font-weight: 700; letter-spacing: 1.6px; flex: 1; z-index: 1; }
+  .cname { color: #fff; font-size: 12px; font-weight: 700; letter-spacing: 1.6px; flex: 1; z-index: 1; display: flex; align-items: center; gap: 8px; }
+  .medal { font-size: 24px; line-height: 1; letter-spacing: 0; }
+  .leg-medal { margin-top: 0; padding: 0 0 3px; font-size: 10px; color: #6a6a63; text-align: center; break-inside: avoid; }
   .cstats { z-index: 1; white-space: nowrap; }
   .cstats .n1 { color: #fff; font-size: 13px; font-weight: 700; }
   .cstats .n2 { color: #8a8f9a; font-size: 11px; }
@@ -104,6 +106,7 @@
     <span><span class="dot-p"></span>Parcial</span>
     <span><span class="dot-x"></span>Pendente</span>
   </div>
+  <div class="leg-medal">🥇🥈🥉 maior presença · 🔦 menor presença</div>
   <div class="foot-info" id="rodape-data">Churrasco 20 Anos — CPOR Recife · Turma 2006</div>
 
 </div>
@@ -165,6 +168,19 @@ function render(pessoas) {
   document.getElementById('rodape-data').textContent = 'Churrasco 20 Anos — CPOR Recife · Turma 2006 · ' + dtStr;
 
   const container = document.getElementById('cursos-container');
+  const pctExato = c => {
+    const m = pessoas.filter(p => p.curso === c.id);
+    return m.length ? m.filter(p => p.pago > 0).length / m.length : 0;
+  };
+  const ranking = [...CURSOS].sort((a, b) => pctExato(b) - pctExato(a)).map(c => c.id);
+  const MEDALHAS = ['🥇', '🥈', '🥉'];
+  const medalhaDe = id => {
+    const pos = ranking.indexOf(id);
+    if (pos >= 0 && pos < 3) return MEDALHAS[pos];
+    if (pos === ranking.length - 1) return '🔦';
+    return '';
+  };
+
   container.innerHTML = CURSOS.map(c => {
     const membros = pessoas.filter(p => p.curso === c.id);
     const cQuit = membros.filter(p => p.pago >= COTA);
@@ -181,7 +197,7 @@ function render(pessoas) {
       <div class="cbar">
         <div class="cbar-fill" style="width:${pct}%; background: linear-gradient(to right, ${c.cor}66, ${c.cor}1a);"></div>
         <div class="sym"><img src="${c.img}" alt="${c.nome}"></div>
-        <div class="cname">${c.nome}</div>
+        <div class="cname">${medalhaDe(c.id) ? `<span class="medal">${medalhaDe(c.id)}</span>` : ''}${c.nome}</div>
         <div class="cstats"><span class="n1">${cConf}</span><span class="n2"> / ${cTotal}</span><span class="pct" style="background:${c.cor}">${pct}%</span></div>
       </div>
       <div class="cbody">
