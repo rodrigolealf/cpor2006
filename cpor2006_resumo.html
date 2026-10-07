@@ -41,6 +41,7 @@
   .sym img { width: 100%; height: 100%; object-fit: contain; }
   .cname { color: #fff; font-size: 12px; font-weight: 700; letter-spacing: 1.6px; flex: 1; z-index: 1; display: flex; align-items: center; gap: 8px; }
   .medal { font-size: 24px; line-height: 1; letter-spacing: 0; }
+  .medal-pct { font-size: 18px; margin-left: 6px; vertical-align: middle; }
   .leg-medal { margin-top: 0; padding: 0 0 3px; font-size: 10px; color: #6a6a63; text-align: center; break-inside: avoid; }
   .cstats { z-index: 1; white-space: nowrap; }
   .cstats .n1 { color: #fff; font-size: 13px; font-weight: 700; }
@@ -198,7 +199,7 @@ function render(pessoas) {
         <div class="cbar-fill" style="width:${pct}%; background: linear-gradient(to right, ${c.cor}66, ${c.cor}1a);"></div>
         <div class="sym"><img src="${c.img}" alt="${c.nome}"></div>
         <div class="cname">${medalhaDe(c.id) ? `<span class="medal">${medalhaDe(c.id)}</span>` : ''}${c.nome}</div>
-        <div class="cstats"><span class="n1">${cConf}</span><span class="n2"> / ${cTotal}</span><span class="pct" style="background:${c.cor}">${pct}%</span></div>
+        <div class="cstats"><span class="n1">${cConf}</span><span class="n2"> / ${cTotal}</span><span class="pct" style="background:${c.cor}">${pct}%</span>${medalhaDe(c.id) === '🔦' ? '<span class="medal medal-pct">🔦</span>' : ''}</div>
       </div>
       <div class="cbody">
         <div class="conf">${confHTML}</div>
