@@ -1322,9 +1322,15 @@ async function capturarOnibus(escala) {
       useCORS: true,
       backgroundColor: '#f4f4f2',
       windowWidth: 794,
-      width: pagina.scrollWidth,
-      height: pagina.scrollHeight,
-      x: 0, y: 0, scrollX: 0, scrollY: 0
+      scrollX: 0, scrollY: 0,
+      onclone: doc => {
+        // solta a página no canto da cópia, fora do painel com rolagem que cortava a imagem
+        const el = doc.getElementById('onibus-pagina');
+        doc.body.innerHTML = '';
+        doc.body.style.margin = '0';
+        el.style.margin = '0';
+        doc.body.appendChild(el);
+      }
     });
   } finally {
     if (viewportMeta && originalViewport) viewportMeta.setAttribute('content', originalViewport);
