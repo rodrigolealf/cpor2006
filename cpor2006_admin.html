@@ -152,6 +152,10 @@ textarea:focus{outline:none;border-color:#888}
 .ob-hero .hr{font-size:24px;font-weight:700;line-height:1.1}
 .ob-hero .tot{font-size:12px;color:#6a6a63;font-weight:600}
 .ob-hero .tot b{font-size:15px;color:#1a2332}
+.ob-saida{background:#1a2332;border-radius:6px;margin-top:6px;padding:12px 20px;display:flex;align-items:center;gap:16px;border-left:3px solid #e5484d}
+.ob-saida .pin{display:flex;align-items:center;flex-shrink:0}
+.ob-saida .lbl{font-size:11px;color:#9aa3b2;letter-spacing:1.8px;font-weight:700}
+.ob-saida .loc{font-size:30px;font-weight:800;color:#fff;letter-spacing:1px;line-height:1.15;margin-top:2px}
 .ob-course{background:#fff;border-radius:6px;margin-top:5px;overflow:hidden;border-left:3px solid #333}
 .ob-cbar{background:#1a2332;padding:8px 12px;display:flex;align-items:center;gap:11px}
 .ob-sym{width:32px;height:32px;background:#fff;border-radius:3px;padding:2px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -1189,6 +1193,8 @@ const IMG_ONIBUS = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAq4AAAFeCAIAAA
 // ===== ÔNIBUS =====
 const ONIBUS_IDA = '10:30';
 const ONIBUS_VOLTA = '19:00';
+const ONIBUS_SAIDA = 'PRAÇA DO DERBY';
+const PIN_SVG = '<svg viewBox="0 0 24 32" width="34" height="45" xmlns="http://www.w3.org/2000/svg"><path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 20 12 20s12-11 12-20C24 5.4 18.6 0 12 0z" fill="#e5484d"/><circle cx="12" cy="12" r="4.6" fill="#fff"/></svg>';
 const ONIBUS_CURSOS = [
   {id:'inf', nome:'INFANTARIA',      cor:'#5b8c3e'},
   {id:'art', nome:'ARTILHARIA',      cor:'#b8544a'},
@@ -1235,6 +1241,10 @@ function renderOnibus() {
         </div>
         <div class="tot"><b>${vao.length}</b> combatente${vao.length === 1 ? '' : 's'} confirmado${vao.length === 1 ? '' : 's'} no ônibus</div>
       </div>
+    </div>
+    <div class="ob-saida">
+      <div class="pin">${PIN_SVG}</div>
+      <div><div class="lbl">PONTO DE SAÍDA</div><div class="loc">${ONIBUS_SAIDA}</div></div>
     </div>
     ${blocos || '<div class="ob-vazio">Nenhum combatente confirmado no ônibus ainda.</div>'}
     <div class="ob-foot">Churrasco 20 Anos — CPOR Recife · Turma 2006 · Atualizado em ${dtStr}</div>`;
