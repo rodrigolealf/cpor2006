@@ -156,6 +156,16 @@ textarea:focus{outline:none;border-color:#888}
 .ob-saida .pin{display:flex;align-items:center;flex-shrink:0}
 .ob-saida .lbl{font-size:11px;color:#9aa3b2;letter-spacing:1.8px;font-weight:700}
 .ob-saida .loc{font-size:30px;font-weight:800;color:#fff;letter-spacing:1px;line-height:1.15;margin-top:2px}
+.ob-dest{background:#fff;border-radius:6px;margin-top:6px;padding:12px 16px;display:flex;align-items:center;gap:16px;border-left:3px solid #2f6fed}
+.ob-dest .txt{flex:1;min-width:0}
+.ob-dest .lbl{font-size:9px;color:#6a6a63;letter-spacing:1.4px;font-weight:700}
+.ob-dest .nome{font-size:16px;font-weight:700;margin-top:2px}
+.ob-dest .end{font-size:11px;color:#6a6a63;margin-top:1px}
+.ob-dest .stats{display:flex;gap:8px;margin-top:9px}
+.ob-dest .stats>div{flex:1;background:#f4f4f2;border-radius:5px;padding:5px 8px}
+.ob-dest .l{font-size:8px;color:#6a6a63;letter-spacing:.7px;font-weight:700}
+.ob-dest .v{font-size:15px;font-weight:700;margin-top:1px;white-space:nowrap}
+.ob-dest .mapa{width:300px;flex-shrink:0}
 .ob-course{background:#fff;border-radius:6px;margin-top:5px;overflow:hidden;border-left:3px solid #333}
 .ob-cbar{background:#1a2332;padding:8px 12px;display:flex;align-items:center;gap:11px}
 .ob-sym{width:32px;height:32px;background:#fff;border-radius:3px;padding:2px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -1194,6 +1204,12 @@ const IMG_ONIBUS = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAq4AAAFeCAIAAA
 const ONIBUS_IDA = '10:30';
 const ONIBUS_VOLTA = '19:00';
 const ONIBUS_SAIDA = 'PRAÇA DO DERBY';
+const ONIBUS_DESTINO = 'CONDOMÍNIO VILLA TRÊS LAGOAS';
+const ONIBUS_DESTINO_END = 'BR-232, km 19 · Jaboatão dos Guararapes';
+const ONIBUS_KM = '24 km';
+const ONIBUS_TEMPO = '~35 min';
+const ONIBUS_CHEGADA = '~11:05';
+const ROTA_SVG = '<svg viewBox="0 0 380 150" xmlns="http://www.w3.org/2000/svg" width="100%" style="display:block;max-width:380px"><rect width="100%" style="display:block;max-width:380px" rx="8" fill="#eef2ee"/><path d="M354.0 33.1 L353.1 33.2 L352.5 33.6 L351.7 34.1 L349.0 35.9 L347.6 36.6 L346.2 35.7 L345.0 35.4 L345.3 36.4 L345.8 37.6 L345.4 40.2 L344.4 41.1 L341.9 41.4 L337.1 42.4 L334.9 42.9 L331.4 43.7 L328.8 43.6 L322.2 43.4 L319.3 43.1 L309.5 40.7 L306.1 39.9 L304.9 39.7 L303.1 40.0 L297.6 42.3 L294.2 43.8 L291.4 44.9 L289.6 45.7 L286.2 47.1 L283.7 48.2 L275.5 51.6 L271.0 53.5 L266.3 55.5 L258.5 58.1 L250.0 60.7 L245.6 62.1 L238.1 64.4 L232.6 65.7 L229.6 66.6 L226.6 67.8 L219.5 69.8 L207.8 71.8 L205.3 72.3 L194.3 74.2 L187.8 75.4 L184.8 76.5 L180.0 79.4 L173.6 83.5 L172.0 84.3 L166.1 86.0 L161.9 87.3 L150.7 90.7 L146.6 91.0 L142.1 91.0 L138.5 93.1 L135.8 94.2 L129.8 94.4 L127.1 94.4 L124.2 94.6 L121.0 95.5 L117.9 97.6 L115.2 100.0 L111.0 100.8 L108.6 101.0 L101.4 101.7 L95.7 102.5 L90.4 103.9 L83.3 105.8 L78.4 106.2 L72.9 106.5 L65.5 106.9 L59.1 108.6 L55.5 108.7 L52.9 108.0 L47.5 105.1 L44.8 104.0 L41.8 103.5 L35.7 103.7 L30.7 103.9 L27.0 104.7 L26.0 105.5 L26.4 105.8 L28.5 104.9 L31.5 104.1 L34.3 104.0 L37.6 104.1 L41.1 104.4 L44.0 104.4 L46.3 105.0 L49.6 106.6 L53.5 108.5 L56.5 109.1 L59.0 108.9 L60.9 109.7 L61.8 109.8 L62.4 111.3 L63.2 114.1 L63.4 116.1 L63.3 116.9" fill="none" stroke="#ffffff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><path d="M354.0 33.1 L353.1 33.2 L352.5 33.6 L351.7 34.1 L349.0 35.9 L347.6 36.6 L346.2 35.7 L345.0 35.4 L345.3 36.4 L345.8 37.6 L345.4 40.2 L344.4 41.1 L341.9 41.4 L337.1 42.4 L334.9 42.9 L331.4 43.7 L328.8 43.6 L322.2 43.4 L319.3 43.1 L309.5 40.7 L306.1 39.9 L304.9 39.7 L303.1 40.0 L297.6 42.3 L294.2 43.8 L291.4 44.9 L289.6 45.7 L286.2 47.1 L283.7 48.2 L275.5 51.6 L271.0 53.5 L266.3 55.5 L258.5 58.1 L250.0 60.7 L245.6 62.1 L238.1 64.4 L232.6 65.7 L229.6 66.6 L226.6 67.8 L219.5 69.8 L207.8 71.8 L205.3 72.3 L194.3 74.2 L187.8 75.4 L184.8 76.5 L180.0 79.4 L173.6 83.5 L172.0 84.3 L166.1 86.0 L161.9 87.3 L150.7 90.7 L146.6 91.0 L142.1 91.0 L138.5 93.1 L135.8 94.2 L129.8 94.4 L127.1 94.4 L124.2 94.6 L121.0 95.5 L117.9 97.6 L115.2 100.0 L111.0 100.8 L108.6 101.0 L101.4 101.7 L95.7 102.5 L90.4 103.9 L83.3 105.8 L78.4 106.2 L72.9 106.5 L65.5 106.9 L59.1 108.6 L55.5 108.7 L52.9 108.0 L47.5 105.1 L44.8 104.0 L41.8 103.5 L35.7 103.7 L30.7 103.9 L27.0 104.7 L26.0 105.5 L26.4 105.8 L28.5 104.9 L31.5 104.1 L34.3 104.0 L37.6 104.1 L41.1 104.4 L44.0 104.4 L46.3 105.0 L49.6 106.6 L53.5 108.5 L56.5 109.1 L59.0 108.9 L60.9 109.7 L61.8 109.8 L62.4 111.3 L63.2 114.1 L63.4 116.1 L63.3 116.9" fill="none" stroke="#2f6fed" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="354.0" cy="33.1" r="7" fill="#fff" stroke="#1a2332" stroke-width="3.5"/><g transform="translate(63.3,116.9)"><path d="M0 0C-7-9-12-14-12-20a12 12 0 0 1 24 0C12-14 7-9 0 0z" transform="translate(0,2)" fill="#e5484d"/><circle cx="0" cy="-18" r="4.6" fill="#fff"/></g><text x="343" y="30" text-anchor="end" font-family="-apple-system,Segoe UI,sans-serif" font-size="12" font-weight="700" fill="#1a2332">Praça do Derby</text><text x="80" y="134" font-family="-apple-system,Segoe UI,sans-serif" font-size="12" font-weight="700" fill="#1a2332">Villa Três Lagoas</text></svg>';
 const PIN_SVG = '<svg viewBox="0 0 24 32" width="34" height="45" xmlns="http://www.w3.org/2000/svg"><path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 20 12 20s12-11 12-20C24 5.4 18.6 0 12 0z" fill="#e5484d"/><circle cx="12" cy="12" r="4.6" fill="#fff"/></svg>';
 const ONIBUS_CURSOS = [
   {id:'inf', nome:'INFANTARIA',      cor:'#5b8c3e'},
@@ -1245,6 +1261,19 @@ function renderOnibus() {
     <div class="ob-saida">
       <div class="pin">${PIN_SVG}</div>
       <div><div class="lbl">PONTO DE SAÍDA</div><div class="loc">${ONIBUS_SAIDA}</div></div>
+    </div>
+    <div class="ob-dest">
+      <div class="txt">
+        <div class="lbl">DESTINO</div>
+        <div class="nome">${ONIBUS_DESTINO}</div>
+        <div class="end">${ONIBUS_DESTINO_END}</div>
+        <div class="stats">
+          <div><div class="l">DISTÂNCIA</div><div class="v">${ONIBUS_KM}</div></div>
+          <div><div class="l">TEMPO ESTIMADO</div><div class="v">${ONIBUS_TEMPO}</div></div>
+          <div><div class="l">CHEGADA PREVISTA</div><div class="v">${ONIBUS_CHEGADA}</div></div>
+        </div>
+      </div>
+      <div class="mapa">${ROTA_SVG}</div>
     </div>
     ${blocos || '<div class="ob-vazio">Nenhum combatente confirmado no ônibus ainda.</div>'}
     <div class="ob-foot">Churrasco 20 Anos — CPOR Recife · Turma 2006 · Atualizado em ${dtStr}</div>`;
