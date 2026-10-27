@@ -1505,6 +1505,33 @@ function fmtNasc(d) { if (!d) return '-'; const [a, m, dia] = d.split('-'); retu
 function fmtEnvio(t) { return new Date(t).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) + ' ' + new Date(t).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); }
 function escCad(s) { return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
 
+// Padrão: "Rodrigo Alexandre Silva LEAL Ferreira" (igual ao gatilho do banco)
+const PARTICULAS = ['de', 'da', 'do', 'das', 'dos', 'e'];
+const semAcento = t => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+function posGuerra(w, guerra) {
+  const g = String(guerra || '').trim().split(/\s+/).filter(Boolean);
+  if (!g.length) return -1;
+  for (let i = 0; i + g.length <= w.length; i++)
+    if (g.every((x, j) => semAcento(w[i + j]) === semAcento(x))) return i;
+  return -1;
+}
+function formatarNome(nome, guerra) {
+  const w = String(nome || '').trim().split(/\s+/).filter(Boolean)
+    .map((p, i) => i && PARTICULAS.includes(p.toLowerCase()) ? p.toLowerCase() : p.charAt(0).toUpperCase() + p.slice(1).toLowerCase());
+  const i = posGuerra(w, guerra), k = String(guerra || '').trim().split(/\s+/).length;
+  if (i >= 0) for (let j = i; j < i + k; j++) w[j] = w[j].toUpperCase();
+  return w.join(' ');
+}
+// devolve [[texto, negrito], ...] para montar HTML ou PDF
+function partesNome(nome, guerra) {
+  const w = String(nome || '').split(' ');
+  const i = posGuerra(w, guerra), k = String(guerra || '').trim().split(/\s+/).length;
+  if (i < 0) return [[nome, false]];
+  return [[w.slice(0, i).join(' '), false], [w.slice(i, i + k).join(' '), true], [w.slice(i + k).join(' '), false]]
+    .filter(p => p[0]).map((p, n, arr) => [p[0] + (n < arr.length - 1 ? ' ' : ''), p[1]]);
+}
+const nomeHTML = (n, g) => partesNome(n, g).map(([t, b]) => b ? `<strong>${escCad(t)}</strong>` : escCad(t)).join('');
+
 function renderCadastro() {
   if (!cadLista) return;
   const q = (document.getElementById('cad-busca').value || '').trim().toLowerCase();
@@ -1523,7 +1550,7 @@ function renderCadastro() {
     if (!membros.length) return;
     html += `<tr class="receb-curso-header"><td colspan="7">${NOMES[cid]} (${membros.length})</td></tr>`;
     membros.forEach((c, i) => {
-      html += `<tr><td style="color:#999">${i + 1}</td><td>${escCad(c.nome_completo)}</td><td><strong>${escCad(c.nome_guerra)}</strong></td>
+      html += `<tr><td style="color:#999">${i + 1}</td><td>${nomeHTML(c.nome_completo, c.nome_guerra)}</td><td><strong>${escCad(c.nome_guerra)}</strong></td>
         <td>${fmtCPF(c.cpf)}</td><td>${fmtNasc(c.nascimento)}</td><td style="font-size:11px;color:#777">${fmtEnvio(c.created_at)}</td>
         <td><button onclick="excluirCadastro(${c.id})" title="Excluir" style="padding:3px 8px;font-size:10px;border:1px solid #ddd;border-radius:4px;background:#fff;cursor:pointer">🗑️</button></td></tr>`;
     });
@@ -1551,7 +1578,7 @@ function renderListaCad() {
     if (cadModo === 'cpf') {
       const lista = cadLista.filter(c => c.curso === cid).sort((a, b) => ord(a.nome_completo, b.nome_completo));
       totOk += lista.length;
-      itens = lista.map((c, i) => `<li><span class="n">${i + 1}.</span><span class="nm">${escCad(c.nome_completo)}</span><span class="cpf">${fmtCPF(c.cpf)}</span></li>`);
+      itens = lista.map((c, i) => `<li><span class="n">${i + 1}.</span><span class="nm">${nomeHTML(c.nome_completo, c.nome_guerra)}</span><span class="cpf">${fmtCPF(c.cpf)}</span></li>`);
       cont = `${lista.length} cadastrados`;
     } else {
       const ok = cadLista.filter(c => c.curso === cid).map(c => c.nome_guerra).sort(ord);
@@ -1740,8 +1767,17 @@ function salvarCadastroPDF() {
       if (y > 280) { novaPagina(); pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9); }
       if (i % 2) { pdf.setFillColor(245, 245, 242); pdf.rect(10, y - 3.8, 190, 5.6, 'F'); }
       pdf.setTextColor(40);
-      const v = [String(i + 1), pdf.splitTextToSize(c.nome_completo, 78)[0], c.nome_guerra, fmtCPF(c.cpf), fmtNasc(c.nascimento)];
-      cols.forEach((col, k) => pdf.text(v[k], col.x, y));
+      const v = [String(i + 1), '', c.nome_guerra, fmtCPF(c.cpf), fmtNasc(c.nascimento)];
+      cols.forEach((col, k) => k !== 1 && pdf.text(v[k], col.x, y));
+      let x = cols[1].x;
+      partesNome(c.nome_completo, c.nome_guerra).forEach(([t, b]) => {
+        pdf.setFont('helvetica', b ? 'bold' : 'normal');
+        const resto = 98 - x;
+        if (resto <= 0) return;
+        const txt = pdf.splitTextToSize(t, resto)[0];
+        pdf.text(txt, x, y); x += pdf.getTextWidth(txt + (t.endsWith(' ') ? ' ' : ''));
+      });
+      pdf.setFont('helvetica', 'normal');
       y += 5.6;
     });
     y += 5;
