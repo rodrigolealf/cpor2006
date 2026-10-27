@@ -146,6 +146,18 @@ textarea:focus{outline:none;border-color:#888}
 .cad-cursos b{display:block;font-size:16px}
 .cad-cursos span{font-size:9px;color:#888;text-transform:uppercase;font-weight:600}
 @media (max-width:560px){.cad-cursos{grid-template-columns:repeat(3,1fr)}}
+.cad-names span:before{content:none}
+.cad-names span.ok{color:#1a2332}
+.cad-names span.ok:before{content:"✅";font-size:11px}
+.cad-names span.pend{color:#a8a89f;font-weight:600}
+.cad-names span.pend:before{content:"⏳";font-size:11px}
+.cad-sec{font-size:9px;font-weight:700;letter-spacing:1.2px;color:#6a6a63;padding:8px 14px 0}
+.cad-resumo{display:flex;gap:6px;margin-top:6px}
+.cad-resumo>div{flex:1;background:#fff;border-radius:6px;padding:8px 12px;border-left:3px solid #2d7a3f}
+.cad-resumo>div.p{border-left-color:#c4841a}
+.cad-resumo>div.t{border-left-color:#1a2332}
+.cad-resumo .l{font-size:9px;color:#6a6a63;letter-spacing:.8px;font-weight:700}
+.cad-resumo .v{font-size:22px;font-weight:700;line-height:1.15}
 .ob-actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
 .ob-scroll{overflow:hidden;background:#e9e9e6;border-radius:10px;padding:10px 0}
 .ob-page{width:794px;margin:0;transform-origin:top left;background:#f4f4f2;padding:12px 14px 8px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;color:#1a2332;box-sizing:border-box}
@@ -364,8 +376,15 @@ textarea:focus{outline:none;border-color:#888}
       <div class="ob-actions">
         <input class="cad-busca" id="cad-busca" placeholder="Buscar nome, guerra ou CPF" oninput="renderCadastro()" style="flex:1;min-width:180px">
         <button class="btn" onclick="carregarCadastros()">🔄 Atualizar</button>
-        <button class="btn" onclick="salvarCadastroPDF()">📄 Relatório PDF</button>
+        <button class="btn" onclick="salvarCadastroPDF()">📄 Lista completa PDF</button>
         <button class="btn" onclick="salvarCadastroCSV()">📊 Excel (CSV)</button>
+      </div>
+      <div class="ob-actions">
+        <button class="btn" onclick="salvarRelCadImagem()">🖼️ Salvar relatório (imagem)</button>
+        <button class="btn" onclick="salvarRelCadPDF()">📄 Salvar relatório (PDF)</button>
+      </div>
+      <div class="ob-scroll" id="cad-rel-box" style="margin-bottom:12px">
+        <div class="ob-page" id="cad-relatorio"></div>
       </div>
       <div style="overflow-x:auto">
         <table class="receb-table" style="min-width:640px">
@@ -1370,7 +1389,11 @@ async function toggleOnibus(id, marcado) {
 }
 
 async function capturarOnibus(escala) {
-  const pagina = document.getElementById('onibus-pagina');
+  return capturarPagina('onibus-pagina', escala);
+}
+
+async function capturarPagina(idPagina, escala) {
+  const pagina = document.getElementById(idPagina);
   const viewportMeta = document.querySelector('meta[name="viewport"]');
   const originalViewport = viewportMeta ? viewportMeta.getAttribute('content') : null;
   try {
@@ -1385,7 +1408,7 @@ async function capturarOnibus(escala) {
       scrollX: 0, scrollY: 0,
       onclone: doc => {
         // solta a página no canto da cópia, fora do painel com rolagem que cortava a imagem
-        const el = doc.getElementById('onibus-pagina');
+        const el = doc.getElementById(idPagina);
         doc.body.innerHTML = '';
         doc.body.style.margin = '0';
         el.style.margin = '0';
@@ -1488,7 +1511,77 @@ function renderCadastro() {
         <td><button onclick="excluirCadastro(${c.id})" title="Excluir" style="padding:3px 8px;font-size:10px;border:1px solid #ddd;border-radius:4px;background:#fff;cursor:pointer">🗑️</button></td></tr>`;
     });
   });
+  renderRelCadastro();
   document.getElementById('cad-body').innerHTML = html || '<tr><td colspan="7" style="text-align:center;color:#999;padding:16px">Nenhum cadastro ainda.</td></tr>';
+}
+
+// Relatório: cadastrados × pendentes (pendente = confirmado no churrasco sem cadastro)
+function renderRelCadastro() {
+  const pagina = document.getElementById('cad-relatorio'); if (!pagina || !cadLista) return;
+  const logo = document.querySelector('.top-bar img.logo');
+  const ligados = new Set(cadLista.map(c => c.pessoa_id).filter(Boolean));
+  const agora = new Date();
+  const dtStr = agora.toLocaleDateString('pt-BR') + ' às ' + agora.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+  const ord = (a, b) => a.localeCompare(b, 'pt-BR');
+  let totOk = 0, totPend = 0;
+  const blocos = ONIBUS_CURSOS.map(c => {
+    const ok = cadLista.filter(x => x.curso === c.id).map(x => x.nome_guerra).sort(ord);
+    const pend = state.pessoas.filter(p => p.curso === c.id && p.pago > 0 && !ligados.has(p.id)).map(p => p.nome).sort(ord);
+    totOk += ok.length; totPend += pend.length;
+    if (!ok.length && !pend.length) return '';
+    return `<div class="ob-course" style="border-left-color:${c.cor}">
+      <div class="ob-cbar">
+        <div class="ob-sym"><img src="${IMGS[c.id]}" alt="${c.nome}"></div>
+        <div class="ob-cname">${c.nome}</div>
+        <div class="ob-cnt" style="background:${c.cor}">${ok.length}/${ok.length + pend.length}</div>
+      </div>
+      ${ok.length ? `<div class="cad-sec">CADASTRADOS (${ok.length})</div><div class="ob-names cad-names">${ok.map(n => `<span class="ok">${escCad(n)}</span>`).join('')}</div>` : ''}
+      ${pend.length ? `<div class="cad-sec">PENDENTES (${pend.length})</div><div class="ob-names cad-names">${pend.map(n => `<span class="pend">${escCad(n)}</span>`).join('')}</div>` : ''}
+    </div>`;
+  }).join('');
+  const pct = totOk + totPend ? Math.round(totOk * 100 / (totOk + totPend)) : 0;
+  pagina.innerHTML = `
+    <div class="ob-hd">
+      ${logo ? `<img src="${logo.src}" alt="CPOR">` : ''}
+      <div><h1>Cadastro de Combatentes</h1><div class="sub">CPOR Recife · Turma 2006 · Churrasco 20 Anos</div></div>
+    </div>
+    <div class="cad-resumo">
+      <div><div class="l">CADASTRADOS</div><div class="v">${totOk}</div></div>
+      <div class="p"><div class="l">PENDENTES</div><div class="v">${totPend}</div></div>
+      <div class="t"><div class="l">CONCLUÍDO</div><div class="v">${pct}%</div></div>
+    </div>
+    ${blocos || '<div class="ob-vazio">Nenhum cadastro ainda.</div>'}
+    <div class="ob-foot">Link: ${CAD_URL} · Atualizado em ${dtStr}</div>`;
+  ajustarPreviewCadastro();
+}
+
+function ajustarPreviewCadastro() {
+  const box = document.getElementById('cad-rel-box');
+  const pg = document.getElementById('cad-relatorio');
+  if (!box || !pg || !box.clientWidth) return;
+  const esc = Math.min(1, box.clientWidth / 794);
+  pg.style.transform = esc < 1 ? `scale(${esc})` : 'none';
+  pg.style.marginLeft = Math.max(0, (box.clientWidth - 794 * esc) / 2) + 'px';
+  box.style.height = (pg.offsetHeight * esc + 20) + 'px';
+}
+window.addEventListener('resize', ajustarPreviewCadastro);
+
+async function salvarRelCadImagem() {
+  const canvas = await capturarPagina('cad-relatorio', 3);
+  const link = document.createElement('a');
+  link.download = 'cpor2006_cadastro_situacao.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+async function salvarRelCadPDF() {
+  const canvas = await capturarPagina('cad-relatorio', 2);
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF('p', 'mm', 'a4');
+  let w = 210, h = (canvas.height * w) / canvas.width;
+  if (h > 297) { h = 297; w = (canvas.width * h) / canvas.height; }
+  pdf.addImage(canvas.toDataURL('image/png'), 'PNG', (210 - w) / 2, 0, w, h);
+  pdf.save('cpor2006_cadastro_situacao.pdf');
 }
 
 async function excluirCadastro(id) {
