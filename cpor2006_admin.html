@@ -182,7 +182,7 @@ textarea:focus{outline:none;border-color:#888}
 .aniv-mes ul{list-style:none;margin:0;padding:4px 12px 8px}
 .aniv-mes li{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px dashed #f1e4d4;font-size:12.5px}
 .aniv-mes li:last-child{border-bottom:none}
-.aniv-mes li .d{font-weight:800;color:#e8590c;min-width:22px;font-size:14px;text-align:center}
+.aniv-mes li .d{font-weight:800;color:#e8590c;width:54px;flex-shrink:0;box-sizing:border-box;font-size:14px;text-align:center;background:#fff3e0;border-radius:6px;padding:1px 4px}
 .aniv-mes li img{width:20px;height:20px;object-fit:contain;flex-shrink:0}
 .aniv-mes li .nm{flex:1;min-width:0}
 .aniv-mes li.hoje{background:#fff0f3;border-radius:6px;padding-left:4px}
@@ -1655,7 +1655,7 @@ function renderAniversariantes(pagina, filtroMes) {
     const itens = lista.map(c => {
       const dia = +c.nascimento.split('-')[2];
       const ehHoje = m === mesHoje && dia === diaHoje;
-      return `<li class="${ehHoje ? 'hoje' : ''}"><span class="d">${String(dia).padStart(2, '0')}</span><img src="${IMGS[c.curso]}"><span class="nm">${nomeHTML(c.nome_completo, c.nome_guerra)}${ehHoje ? ' 🎉' : ''}</span></li>`;
+      return `<li class="${ehHoje ? 'hoje' : ''}"><span class="d">${String(dia).padStart(2, '0')}/${String(m).padStart(2, '0')}</span><img src="${IMGS[c.curso]}"><span class="nm">${nomeHTML(c.nome_completo, c.nome_guerra)}${ehHoje ? ' 🎉' : ''}</span></li>`;
     }).join('') || '<li style="color:#b09a85;justify-content:center">Nenhum aniversariante neste mês</li>';
     return `<div class="aniv-mes${m === mesHoje ? ' atual' : ''}">
       <div class="aniv-mes-hd">🎈 ${MESES[m - 1].toUpperCase()}<span class="q">${lista.length} ${lista.length === 1 ? 'aniversariante' : 'aniversariantes'}</span></div>
