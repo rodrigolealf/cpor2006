@@ -136,8 +136,8 @@ textarea:focus{outline:none;border-color:#888}
 @media (max-width:480px){.lista-grid{grid-template-columns:1fr}}
 #tab-onibus.active{border-top:4px solid #1a2332}
 .ob-actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-.ob-scroll{overflow-x:auto;background:#e9e9e6;border-radius:10px;padding:10px 0}
-.ob-page{width:794px;margin:0 auto;background:#f4f4f2;padding:12px 14px 8px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;color:#1a2332;box-sizing:border-box}
+.ob-scroll{overflow:hidden;background:#e9e9e6;border-radius:10px;padding:10px 0}
+.ob-page{width:794px;margin:0;transform-origin:top left;background:#f4f4f2;padding:12px 14px 8px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;color:#1a2332;box-sizing:border-box}
 .ob-hd{background:#fff;border-radius:6px;padding:10px 14px;display:flex;align-items:center;gap:12px;border:.5px solid #d8d5cc;border-top:3px solid #1a2332}
 .ob-hd img{width:46px;height:54px;object-fit:contain;flex-shrink:0}
 .ob-hd h1{font-size:19px;font-weight:700;margin:0;letter-spacing:-.2px}
@@ -1278,6 +1278,8 @@ function renderOnibus() {
     ${blocos || '<div class="ob-vazio">Nenhum combatente confirmado no ônibus ainda.</div>'}
     <div class="ob-foot">Churrasco 20 Anos — CPOR Recife · Turma 2006 · Atualizado em ${dtStr}</div>`;
 
+  ajustarPreviewOnibus();
+
   const ed = document.getElementById('onibus-editor');
   if (ed) {
     ed.innerHTML = ONIBUS_CURSOS.map(c => {
@@ -1288,6 +1290,17 @@ function renderOnibus() {
     }).join('');
   }
 }
+
+function ajustarPreviewOnibus() {
+  const box = document.querySelector('.ob-scroll');
+  const pg = document.getElementById('onibus-pagina');
+  if (!box || !pg || !box.clientWidth) return;
+  const esc = Math.min(1, box.clientWidth / 794);
+  pg.style.transform = esc < 1 ? `scale(${esc})` : 'none';
+  pg.style.marginLeft = Math.max(0, (box.clientWidth - 794 * esc) / 2) + 'px';
+  box.style.height = (pg.offsetHeight * esc + 20) + 'px';
+}
+window.addEventListener('resize', ajustarPreviewOnibus);
 
 async function toggleOnibus(id, marcado) {
   const p = state.pessoas.find(x => x.id === id);
@@ -1329,6 +1342,7 @@ async function capturarOnibus(escala) {
         doc.body.innerHTML = '';
         doc.body.style.margin = '0';
         el.style.margin = '0';
+        el.style.transform = 'none';
         doc.body.appendChild(el);
       }
     });
