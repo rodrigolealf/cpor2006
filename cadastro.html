@@ -157,7 +157,7 @@ function partesNome(nome, guerra) {
 const nomeHTML = (n, g) => partesNome(n, g).map(([t, b]) => b ? `<strong>${esc(t)}</strong>` : esc(t)).join('');
 let cursoSel = null, pessoaSel = null, pessoas = [], jaCadastrados = new Set();
 const H = { apikey: SUPA_KEY, Authorization: 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json' };
-async function carregarPessoas() {
+async function carregarPessoas(tent = 1) {
   try {
     const [ps, cad] = await Promise.all([
       fetch(`${SUPA_URL}/rest/v1/pessoas?select=id,nome,curso&order=nome`, { headers: H }).then(r => r.json()),
@@ -165,7 +165,18 @@ async function carregarPessoas() {
     ]);
     pessoas = Array.isArray(ps) ? ps : [];
     jaCadastrados = new Set((Array.isArray(cad) ? cad : []).map(Number));
-  } catch (e) { pessoas = []; }
+    const aviso = document.getElementById('aviso');
+    if (aviso.dataset.conexao) { aviso.className = 'aviso'; delete aviso.dataset.conexao; }
+  } catch (e) {
+    // sem conexão com o servidor: avisa logo ao abrir, antes de preencher tudo
+    if (tent < 3) { setTimeout(() => carregarPessoas(tent + 1), 2000); return; }
+    const aviso = document.getElementById('aviso');
+    setTimeout(() => carregarPessoas(1), 8000);
+    if (aviso.dataset.envio) return;
+    aviso.dataset.conexao = '1';
+    aviso.textContent = '⚠️ Este aparelho não está conseguindo falar com o servidor (internet, antivírus ou bloqueador de anúncios). Se o envio falhar, faça o cadastro pelo celular usando o 4G.';
+    aviso.className = 'aviso err';
+  }
   if (cursoSel) renderGuerras();
 }
 carregarPessoas();
@@ -259,7 +270,7 @@ function erro(campo, on) {
 
 $('form').addEventListener('submit', async e => {
   e.preventDefault();
-  const aviso = $('aviso'); aviso.className = 'aviso';
+  const aviso = $('aviso'); aviso.className = 'aviso'; delete aviso.dataset.envio; delete aviso.dataset.conexao;
   const nome = $('nome').value.trim().replace(/\s+/g, ' ');
   const pessoa = pessoas.find(p => p.id === pessoaSel);
   const guerra = pessoa ? pessoa.nome : $('guerra').value.trim().replace(/\s+/g, ' ').toUpperCase();
@@ -272,12 +283,25 @@ $('form').addEventListener('submit', async e => {
 
   const btn = $('btn'); btn.disabled = true; btn.textContent = 'Enviando...';
   try {
-    const r = await fetch(`${SUPA_URL}/rest/v1/cadastros`, {
-      method: 'POST',
-      headers: { apikey: SUPA_KEY, Authorization: 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
-      body: JSON.stringify({ nome_completo: nome, nome_guerra: guerra, cpf, nascimento: nasc, curso: cursoSel, pessoa_id: pessoa ? pessoa.id : null })
-    });
-    if (!r.ok) {
+    const corpo = JSON.stringify({ nome_completo: nome, nome_guerra: guerra, cpf, nascimento: nasc, curso: cursoSel, pessoa_id: pessoa ? pessoa.id : null });
+    // tenta de novo se a conexão falhar (rede instável, antivírus, Wi-Fi fraco)
+    let r = null, falhouRede = false;
+    for (let tent = 1; tent <= 4 && !r; tent++) {
+      try {
+        r = await fetch(`${SUPA_URL}/rest/v1/cadastros`, {
+          method: 'POST',
+          headers: { apikey: SUPA_KEY, Authorization: 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+          body: corpo
+        });
+      } catch (e) {
+        falhouRede = true;
+        if (tent < 4) { btn.textContent = `Conexão instável, tentando de novo (${tent + 1}/4)...`; await new Promise(ok => setTimeout(ok, tent * 1500)); }
+      }
+    }
+    if (!r) throw new Error('Não foi possível conectar ao servidor. A internet, o antivírus ou o bloqueador de anúncios deste aparelho pode estar bloqueando o envio. Tente de novo em instantes ou faça pelo celular usando o 4G.');
+    // se a 1ª tentativa chegou ao servidor mas a resposta se perdeu, a seguinte acusa CPF repetido: é o mesmo envio
+    const jaFoi = falhouRede && r.status === 409 && (await r.clone().text()).includes('cadastros_cpf_key');
+    if (!r.ok && !jaFoi) {
       const t = await r.text();
       if (t.includes('pessoa_id')) { carregarPessoas(); throw new Error('Esse nome de guerra já foi cadastrado. Se não foi você, fale com a organização.'); }
       throw new Error(t.includes('23505') ? 'Este CPF já foi cadastrado. Se precisar corrigir algum dado, fale com a organização.' : 'Não foi possível enviar agora. Tente novamente em instantes.');
@@ -288,7 +312,8 @@ $('form').addEventListener('submit', async e => {
     $('card-ok').style.display = 'block';
     window.scrollTo(0, 0);
   } catch (err) {
-    aviso.textContent = err.message; aviso.className = 'aviso err';
+    aviso.textContent = err.message; aviso.className = 'aviso err'; aviso.dataset.envio = '1';
+    aviso.scrollIntoView({ behavior: 'smooth', block: 'center' });
   } finally {
     btn.disabled = false; btn.textContent = 'Enviar cadastro';
   }
