@@ -149,9 +149,16 @@ textarea:focus{outline:none;border-color:#888}
 .cad-names span:before{content:none}
 .cad-names span.ok{color:#1a2332}
 .cad-names span.ok:before{content:"✅";font-size:11px}
-.cad-names span.pend{color:#a8a89f;font-weight:600}
-.cad-names span.pend:before{content:"⏳";font-size:11px}
+.cad-names span.pend{color:#b45309;font-weight:800;font-size:18px}
+.cad-names span.pend:before{content:"⏳";font-size:15px}
+.cad-names span.falt{color:#dc2626;font-weight:700;text-decoration:line-through}
+.cad-names span.falt:before{content:"❌";font-size:11px}
 .cad-sec{font-size:9px;font-weight:700;letter-spacing:1.2px;color:#6a6a63;padding:8px 14px 0}
+.cad-sec.pend{font-size:12px;color:#b45309}
+.cad-sec.falt{color:#dc2626}
+.falt-alerta{background:#fef2f2;border:1.5px solid #fecaca;border-left:5px solid #dc2626;border-radius:6px;padding:10px 14px;color:#991b1b;font-size:13px;line-height:1.45;margin:8px 0}
+.falt-alerta b{color:#7f1d1d}
+.cad-lista-pg .lista-box li.falt{color:#dc2626;font-weight:600}
 .cad-resumo{display:flex;gap:6px;margin-top:6px}
 .cad-resumo>div{flex:1;background:#fff;border-radius:6px;padding:8px 12px;border-left:3px solid #2d7a3f}
 .cad-resumo>div.p{border-left-color:#c4841a}
@@ -341,6 +348,7 @@ textarea:focus{outline:none;border-color:#888}
       </tr></thead>
       <tbody id="custos-view-body"></tbody>
     </table>
+    <div id="custos-falt-alerta"></div>
     <div class="saldo-box" style="margin-top:1rem">
       <span style="font-size:13px;color:#666">Saldo restante</span>
       <span style="font-size:18px;font-weight:600" id="saldo-view">R$ 0</span>
@@ -417,6 +425,7 @@ textarea:focus{outline:none;border-color:#888}
         <button class="receb-filtro-btn active" data-modo="cpf" onclick="modoListaCad('cpf')">📋 Nome e CPF</button>
         <button class="receb-filtro-btn" data-modo="situacao" onclick="modoListaCad('situacao')">✅ Situação (fez / falta)</button>
         <button class="receb-filtro-btn" data-modo="aniv" onclick="modoListaCad('aniv')">🎂 Aniversariantes</button>
+        <button class="receb-filtro-btn" data-modo="faltantes" onclick="modoListaCad('faltantes')">❌ Faltantes</button>
         <select id="aniv-mes" onchange="renderListaCad()" style="display:none;padding:5px 8px;border:1px solid #ddd;border-radius:16px;font-size:11px;font-weight:600"></select>
         <span style="flex:1"></span>
         <button class="btn" onclick="salvarListaCadImagem()">🖼️ Imagem</button>
@@ -425,6 +434,10 @@ textarea:focus{outline:none;border-color:#888}
       <div class="ob-scroll" id="cad-lista-box" style="margin-bottom:12px;background:#e9e9e6">
         <div class="lista-pagina cad-lista-pg" id="cad-lista-pagina"></div>
       </div>
+      <details class="ob-edit" id="falt-edit" style="display:none;margin-bottom:12px">
+        <summary>✏️ Marcar quem não vai (faltantes)</summary>
+        <div class="ob-edit-body" id="falt-editor"></div>
+      </details>
       <div class="ob-scroll" id="cad-rel-box" style="margin-bottom:12px">
         <div class="ob-page" id="cad-relatorio"></div>
       </div>
@@ -723,6 +736,8 @@ function renderCustosView() {
       <td style="color:${c.pago>0?'#16a34a':'#ccc'}">${c.pago>0?fmtBRL(c.pago):'-'}</td>
     </tr>`;
   }).join('');
+  const fa = document.getElementById('custos-falt-alerta');
+  if (fa) fa.innerHTML = alertaFaltantesHTML();
   const saldo = totalArr() - totalCusto();
   const el = document.getElementById('saldo-view');
   if (el) { el.textContent = fmtBRL(saldo); el.style.color = saldo>=0?'#16a34a':'#dc2626'; }
@@ -1604,7 +1619,11 @@ function renderListaCad() {
   }
   selMes.style.display = cadModo === 'aniv' ? '' : 'none';
   pagina.className = cadModo === 'aniv' ? 'aniv-pg' : 'lista-pagina cad-lista-pg';
+  document.getElementById('falt-edit').style.display = cadModo === 'faltantes' ? '' : 'none';
+  // na Situação a prévia é o relatório completo logo abaixo (é ele que vai para a imagem)
+  document.getElementById('cad-lista-box').style.display = cadModo === 'situacao' ? 'none' : '';
   if (cadModo === 'aniv') { renderAniversariantes(pagina, selMes.value); ajustarPreviewCadastro(); return; }
+  if (cadModo === 'faltantes') { renderFaltantes(pagina); ajustarPreviewCadastro(); return; }
   const ord = (a, b) => a.localeCompare(b, 'pt-BR');
   const ligados = new Set(cadLista.map(c => c.pessoa_id).filter(Boolean));
   let totOk = 0, totPend = 0;
@@ -1617,9 +1636,10 @@ function renderListaCad() {
       cont = `${lista.length} cadastrados`;
     } else {
       const ok = cadLista.filter(c => c.curso === cid).map(c => c.nome_guerra).sort(ord);
-      const pend = state.pessoas.filter(p => p.curso === cid && p.pago > 0 && !ligados.has(p.id)).map(p => p.nome).sort(ord);
+      const pend = state.pessoas.filter(p => p.curso === cid && p.pago > 0 && !p.faltante && !ligados.has(p.id)).map(p => p.nome).sort(ord);
+      const falt = state.pessoas.filter(p => p.curso === cid && p.faltante && !ligados.has(p.id)).map(p => p.nome).sort(ord);
       totOk += ok.length; totPend += pend.length;
-      itens = ok.map(n => ['✅', n, '']).concat(pend.map(n => ['⏳', n, ' class="pend"']))
+      itens = ok.map(n => ['✅', n, '']).concat(pend.map(n => ['⏳', n, ' class="pend"']), falt.map(n => ['❌', n, ' class="falt"']))
         .map(([ic, n, cls], i) => `<li${cls}><span class="n">${i + 1}.</span><span class="nm">${ic} ${escCad(n)}</span></li>`);
       cont = `${ok.length} fizeram · ${pend.length} faltam`;
     }
@@ -1678,13 +1698,25 @@ function renderAniversariantes(pagina, filtroMes) {
 
 function nomeArqListaCad() {
   if (cadModo === 'cpf') return 'nome_cpf';
-  if (cadModo === 'situacao') return 'situacao';
+  if (cadModo === 'situacao') return 'cadastro_situacao';
+  if (cadModo === 'faltantes') return 'faltantes';
   const m = document.getElementById('aniv-mes').value;
   return 'aniversariantes_' + (m === 'todos' ? 'ano' : MESES[+m - 1].toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''));
 }
 
+// Situação salva o relatório completo (cartões + brasões); os outros modos salvam a lista
+function idPaginaListaCad() { return cadModo === 'situacao' ? 'cad-relatorio' : 'cad-lista-pagina'; }
+
+// Alta resolução sem passar do limite de canvas do celular (iPhone corta/branqueia acima de ~16 MP)
+function escalaSegura(idPagina, max) {
+  const el = document.getElementById(idPagina);
+  const h = el ? el.scrollHeight : 1000;
+  return Math.max(1, Math.min(max, Math.sqrt(16000000 / (794 * h))));
+}
+
 async function salvarListaCadImagem() {
-  const canvas = await capturarPagina('cad-lista-pagina', 3);
+  const id = idPaginaListaCad();
+  const canvas = await capturarPagina(id, escalaSegura(id, 3));
   const link = document.createElement('a');
   link.download = `cpor2006_${nomeArqListaCad()}.png`;
   link.href = canvas.toDataURL('image/png');
@@ -1693,7 +1725,8 @@ async function salvarListaCadImagem() {
 
 // PDF A4 que continua nas páginas seguintes quando a lista é comprida
 async function salvarListaCadPDF() {
-  const canvas = await capturarPagina('cad-lista-pagina', 2);
+  const id = idPaginaListaCad();
+  const canvas = await capturarPagina(id, escalaSegura(id, 2));
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF('p', 'mm', 'a4');
   const margem = 8, w = 210 - margem * 2;
@@ -1710,6 +1743,70 @@ async function salvarListaCadPDF() {
   pdf.save(`cpor2006_${nomeArqListaCad()}.pdf`);
 }
 
+// Faltantes: confirmados que não vão mais; o valor deles sai do buffet
+function buffetUnit() {
+  const b = (state.custos || []).find(c => /buffet/i.test(c.nome));
+  return b ? (b.unit || 0) : 0;
+}
+function fmtBRLc(v) { return 'R$ ' + (v || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
+
+function alertaFaltantesHTML() {
+  const falt = state.pessoas.filter(p => p.faltante);
+  if (!falt.length) return '';
+  const unit = buffetUnit();
+  const nomes = falt.map(p => p.nome).sort((a, b) => a.localeCompare(b, 'pt-BR')).map(escCad).join(', ');
+  return `<div class="falt-alerta">⚠️ <b>ATENÇÃO:</b> ${falt.length} ${falt.length === 1 ? 'combatente faltante' : 'combatentes faltantes'} (${nomes}).
+    Abater no valor do buffet: <b>${falt.length} × ${fmtBRLc(unit)} = ${fmtBRLc(falt.length * unit)}</b></div>`;
+}
+
+function renderFaltantes(pagina) {
+  const ord = (a, b) => a.localeCompare(b, 'pt-BR');
+  const falt = state.pessoas.filter(p => p.faltante);
+  const caixas = CURSOS.map(cid => {
+    const lista = falt.filter(p => p.curso === cid).map(p => p.nome).sort(ord);
+    if (!lista.length) return '';
+    return `<div class="lista-box">
+      <div class="lista-box-header">
+        <img class="lista-box-icon" src="${IMGS[cid]}">
+        <div class="lista-box-titulo"><h4>${NOMES[cid]}</h4><div class="lista-box-count">${lista.length} ${lista.length === 1 ? 'faltante' : 'faltantes'}</div></div>
+      </div>
+      <ul>${lista.map((n, i) => `<li class="falt"><span class="n">${i + 1}.</span><span class="nm">❌ ${escCad(n)}</span></li>`).join('')}</ul>
+    </div>`;
+  }).join('');
+  pagina.innerHTML = `
+    <div class="lista-pagina-titulo">Combatentes Faltantes · CPOR Recife Turma 2006 · ${new Date().toLocaleDateString('pt-BR')}</div>
+    ${alertaFaltantesHTML()}
+    <div class="lista-grid">${caixas || '<div style="color:#999;font-size:13px">Nenhum faltante até agora.</div>'}</div>
+    <div class="lista-total">Total: <span class="num">${falt.length}</span> ${falt.length === 1 ? 'faltante' : 'faltantes'}</div>`;
+
+  const ed = document.getElementById('falt-editor');
+  if (ed) {
+    ed.innerHTML = ONIBUS_CURSOS.map(c => {
+      const membros = state.pessoas.filter(p => p.curso === c.id && (p.pago > 0 || p.faltante)).sort((a, b) => ord(a.nome, b.nome));
+      if (!membros.length) return '';
+      return `<h4>${c.nome}</h4><div class="ob-chips">${membros.map(p =>
+        `<label class="ob-chip ${p.faltante ? 'on' : ''}"><input type="checkbox" ${p.faltante ? 'checked' : ''} onchange="toggleFaltante(${p.id}, this.checked)">${escCad(p.nome)}</label>`
+      ).join('')}</div>`;
+    }).join('');
+  }
+}
+
+async function toggleFaltante(id, marcado) {
+  const p = state.pessoas.find(x => x.id === id); if (!p) return;
+  const anterior = !!p.faltante;
+  const det = document.getElementById('falt-edit'), aberto = det.open;
+  p.faltante = marcado;
+  renderRelCadastro(); renderListaCad(); det.open = aberto;
+  try {
+    await supaFetch('pessoas', 'PATCH', {faltante: marcado}, `?id=eq.${id}`);
+  } catch (e) {
+    console.error('toggleFaltante error:', e);
+    p.faltante = anterior;
+    renderRelCadastro(); renderListaCad(); det.open = aberto;
+    alert('Não foi possível salvar. Tente de novo.');
+  }
+}
+
 // Relatório: cadastrados × pendentes (pendente = confirmado no churrasco sem cadastro)
 function renderRelCadastro() {
   const pagina = document.getElementById('cad-relatorio'); if (!pagina || !cadLista) return;
@@ -1721,9 +1818,10 @@ function renderRelCadastro() {
   let totOk = 0, totPend = 0;
   const blocos = ONIBUS_CURSOS.map(c => {
     const ok = cadLista.filter(x => x.curso === c.id).map(x => x.nome_guerra).sort(ord);
-    const pend = state.pessoas.filter(p => p.curso === c.id && p.pago > 0 && !ligados.has(p.id)).map(p => p.nome).sort(ord);
+    const pend = state.pessoas.filter(p => p.curso === c.id && p.pago > 0 && !p.faltante && !ligados.has(p.id)).map(p => p.nome).sort(ord);
+    const falt = state.pessoas.filter(p => p.curso === c.id && p.faltante && !ligados.has(p.id)).map(p => p.nome).sort(ord);
     totOk += ok.length; totPend += pend.length;
-    if (!ok.length && !pend.length) return '';
+    if (!ok.length && !pend.length && !falt.length) return '';
     return `<div class="ob-course" style="border-left-color:${c.cor}">
       <div class="ob-cbar">
         <div class="ob-sym"><img src="${IMGS[c.id]}" alt="${c.nome}"></div>
@@ -1731,7 +1829,8 @@ function renderRelCadastro() {
         <div class="ob-cnt" style="background:${c.cor}">${ok.length}/${ok.length + pend.length}</div>
       </div>
       ${ok.length ? `<div class="cad-sec">CADASTRADOS (${ok.length})</div><div class="ob-names cad-names">${ok.map(n => `<span class="ok">${escCad(n)}</span>`).join('')}</div>` : ''}
-      ${pend.length ? `<div class="cad-sec">PENDENTES (${pend.length})</div><div class="ob-names cad-names">${pend.map(n => `<span class="pend">${escCad(n)}</span>`).join('')}</div>` : ''}
+      ${pend.length ? `<div class="cad-sec pend">PENDENTES (${pend.length})</div><div class="ob-names cad-names">${pend.map(n => `<span class="pend">${escCad(n)}</span>`).join('')}</div>` : ''}
+      ${falt.length ? `<div class="cad-sec falt">FALTANTES (${falt.length}) · NÃO PRECISAM SE CADASTRAR</div><div class="ob-names cad-names">${falt.map(n => `<span class="falt">${escCad(n)}</span>`).join('')}</div>` : ''}
     </div>`;
   }).join('');
   const pct = totOk + totPend ? Math.round(totOk * 100 / (totOk + totPend)) : 0;
@@ -1766,7 +1865,7 @@ function ajustarPreviewPagina(idBox, idPagina) {
 window.addEventListener('resize', ajustarPreviewCadastro);
 
 async function salvarRelCadImagem() {
-  const canvas = await capturarPagina('cad-relatorio', 3);
+  const canvas = await capturarPagina('cad-relatorio', escalaSegura('cad-relatorio', 3));
   const link = document.createElement('a');
   link.download = 'cpor2006_cadastro_situacao.png';
   link.href = canvas.toDataURL('image/png');
@@ -1774,13 +1873,8 @@ async function salvarRelCadImagem() {
 }
 
 async function salvarRelCadPDF() {
-  const canvas = await capturarPagina('cad-relatorio', 2);
-  const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF('p', 'mm', 'a4');
-  let w = 210, h = (canvas.height * w) / canvas.width;
-  if (h > 297) { h = 297; w = (canvas.width * h) / canvas.height; }
-  pdf.addImage(canvas.toDataURL('image/png'), 'PNG', (210 - w) / 2, 0, w, h);
-  pdf.save('cpor2006_cadastro_situacao.pdf');
+  const modo = cadModo; cadModo = 'situacao';
+  try { await salvarListaCadPDF(); } finally { cadModo = modo; }
 }
 
 async function excluirCadastro(id) {
