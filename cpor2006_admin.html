@@ -307,7 +307,7 @@ textarea:focus{outline:none;border-color:#888}
     <button class="vtab" onclick="switchTab('receb',this)">Recebimentos</button>
     <button class="vtab" onclick="switchTab('custos',this)">Custos</button>
     <button class="vtab" onclick="switchTab('sim',this)">Simulação</button>
-    <button class="vtab" onclick="switchTab('onibus',this)">Ônibus</button>
+    <button class="vtab" onclick="switchTab('onibus',this)">5 Ton</button>
     <button class="vtab" onclick="switchTab('cadastro',this)">Cadastro</button>
   </div>
   <div id="tab-cursos" class="vsection active">
@@ -373,7 +373,7 @@ textarea:focus{outline:none;border-color:#888}
   </div>
 
   <div id="tab-onibus" class="vsection">
-    <div class="vsection-title">🚌 Ônibus</div>
+    <div class="vsection-title">🚛 5 Ton - Transporte Churrasco 2026</div>
     <div class="ob-actions">
       <button class="btn primary" style="font-size:13px;padding:8px 16px" onclick="salvarOnibusImagem()">Salvar Imagem (alta resolução)</button>
       <button class="btn" onclick="salvarOnibusPDF()">Salvar PDF</button>
@@ -382,7 +382,7 @@ textarea:focus{outline:none;border-color:#888}
       <div class="ob-page" id="onibus-pagina"></div>
     </div>
     <details class="ob-edit">
-      <summary>✏️ Editar quem vai de ônibus</summary>
+      <summary>✏️ Editar quem vai na 5 Ton</summary>
       <div class="ob-edit-body" id="onibus-editor"></div>
     </details>
   </div>
@@ -1352,18 +1352,18 @@ function renderOnibus() {
     <div class="ob-hd">
       ${logo ? `<img src="${logo.src}" alt="CPOR">` : ''}
       <div style="flex:1">
-        <h1>Ônibus — Churrasco 20 Anos</h1>
+        <h1>5 Ton - Transporte Churrasco 2026</h1>
         <div class="sub">CPOR Recife · Turma 2006 · 31 de outubro de 2026</div>
       </div>
     </div>
     <div class="ob-hero">
-      <img class="bus" src="${IMG_ONIBUS}" alt="Ônibus">
+      <img class="bus" src="${IMG_ONIBUS}" alt="5 Ton">
       <div class="info">
         <div class="hor">
           <div><div class="lbl">IDA</div><div class="hr">${ONIBUS_IDA}</div></div>
           <div class="volta"><div class="lbl">VOLTA</div><div class="hr">${ONIBUS_VOLTA}</div></div>
         </div>
-        <div class="tot"><b>${vao.length}</b> combatente${vao.length === 1 ? '' : 's'} confirmado${vao.length === 1 ? '' : 's'} no ônibus</div>
+        <div class="tot"><b>${vao.length}</b> combatente${vao.length === 1 ? '' : 's'} confirmado${vao.length === 1 ? '' : 's'} na 5 Ton</div>
       </div>
     </div>
     <div class="ob-saida">
@@ -1383,7 +1383,7 @@ function renderOnibus() {
       </div>
       <div class="mapa">${ROTA_SVG}</div>
     </div>
-    ${blocos || '<div class="ob-vazio">Nenhum combatente confirmado no ônibus ainda.</div>'}
+    ${blocos || '<div class="ob-vazio">Nenhum combatente confirmado na 5 Ton ainda.</div>'}
     <div class="ob-foot">Churrasco 20 Anos — CPOR Recife · Turma 2006 · Atualizado em ${dtStr}</div>`;
 
   ajustarPreviewOnibus();
@@ -1466,7 +1466,7 @@ async function capturarPagina(idPagina, escala) {
 async function salvarOnibusImagem() {
   const canvas = await capturarOnibus(3);
   const link = document.createElement('a');
-  link.download = 'cpor2006_onibus.png';
+  link.download = 'cpor2006_5ton.png';
   link.href = canvas.toDataURL('image/png');
   link.click();
 }
@@ -1478,7 +1478,7 @@ async function salvarOnibusPDF() {
   let w = 210, h = (canvas.height * w) / canvas.width;
   if (h > 297) { h = 297; w = (canvas.width * h) / canvas.height; }
   pdf.addImage(canvas.toDataURL('image/png'), 'PNG', (210 - w) / 2, 0, w, h);
-  pdf.save('cpor2006_onibus.pdf');
+  pdf.save('cpor2006_5ton.pdf');
 }
 
 // ===== Cadastro de combatentes (tabela protegida: leitura só via código) =====
