@@ -415,6 +415,12 @@ textarea:focus{outline:none;border-color:#888}
         <input class="cad-busca" id="cad-busca" placeholder="Buscar nome, guerra ou CPF" oninput="renderCadastro()" style="flex:1;min-width:180px">
         <button class="btn" onclick="carregarCadastros()">🔄 Atualizar</button>
         <button class="btn" onclick="salvarCadastroPDF()">📄 Lista completa PDF</button>
+        <span class="cad-campos" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:12px;font-weight:600">
+          <label><input type="checkbox" checked disabled> Nome</label>
+          <label><input type="checkbox" id="pdf-curso" checked> Curso</label>
+          <label><input type="checkbox" id="pdf-cpf" checked> CPF</label>
+          <label><input type="checkbox" id="pdf-aniv" checked> Aniversário</label>
+        </span>
         <button class="btn" onclick="salvarCadastroCSV()">📊 Excel (CSV)</button>
       </div>
       <div class="ob-actions">
@@ -1915,7 +1921,17 @@ function salvarCadastroPDF() {
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF('p', 'mm', 'a4');
   const logo = document.querySelector('.top-bar img.logo');
-  const cols = [{ t: '#', x: 12 }, { t: 'Nome completo', x: 20 }, { t: 'Nome de guerra', x: 100 }, { t: 'CPF', x: 140 }, { t: 'Aniversário', x: 175 }];
+  const porCurso = document.getElementById('pdf-curso').checked;
+  const comCpf = document.getElementById('pdf-cpf').checked;
+  const comAniv = document.getElementById('pdf-aniv').checked;
+  // colunas da direita para a esquerda; o nome ocupa o que sobrar
+  let xr = 200;
+  const xAniv = comAniv ? (xr -= 24) : 0;
+  const xCpf = comCpf ? (xr -= 34) : 0;
+  const cols = [{ t: '#', x: 12 }, { t: 'Nome completo', x: 20 }];
+  if (comCpf) cols.push({ t: 'CPF', x: xCpf });
+  if (comAniv) cols.push({ t: 'Aniversário', x: xAniv });
+  const limNome = xr - 2;
   let y = 0, pag = 1;
   const rodape = () => { pdf.setFontSize(8); pdf.setTextColor(150); pdf.text(`CPOR Recife · Turma 2006 · Gerado em ${new Date().toLocaleString('pt-BR')} · pág. ${pag}`, 105, 290, { align: 'center' }); };
   const cabecalho = () => {
@@ -1928,36 +1944,46 @@ function salvarCadastroPDF() {
     y = 34;
   };
   const novaPagina = () => { rodape(); pdf.addPage(); pag++; cabecalho(); };
-  cabecalho();
-  CURSOS.forEach(cid => {
-    const membros = cadLista.filter(c => c.curso === cid);
-    if (!membros.length) return;
-    if (y > 262) novaPagina();
-    pdf.setFillColor(17, 17, 17); pdf.rect(10, y - 4.5, 190, 7, 'F');
-    pdf.setTextColor(255); pdf.setFont('helvetica', 'bold'); pdf.setFontSize(9);
-    pdf.text(`${NOMES[cid].toUpperCase()} (${membros.length})`, 12, y); y += 7;
-    pdf.setTextColor(120); pdf.setFontSize(7.5);
+  const titulosColunas = () => {
+    pdf.setFont('helvetica', 'bold'); pdf.setTextColor(120); pdf.setFontSize(7.5);
     cols.forEach(c => pdf.text(c.t.toUpperCase(), c.x, y)); y += 5;
     pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9);
-    membros.forEach((c, i) => {
-      if (y > 280) { novaPagina(); pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9); }
-      if (i % 2) { pdf.setFillColor(245, 245, 242); pdf.rect(10, y - 3.8, 190, 5.6, 'F'); }
-      pdf.setTextColor(40);
-      const v = [String(i + 1), '', c.nome_guerra, fmtCPF(c.cpf), fmtNasc(c.nascimento)];
-      cols.forEach((col, k) => k !== 1 && pdf.text(v[k], col.x, y));
-      let x = cols[1].x;
-      partesNome(c.nome_completo, c.nome_guerra).forEach(([t, b]) => {
-        pdf.setFont('helvetica', b ? 'bold' : 'normal');
-        const resto = 98 - x;
-        if (resto <= 0) return;
-        const txt = pdf.splitTextToSize(t, resto)[0];
-        pdf.text(txt, x, y); x += pdf.getTextWidth(txt + (t.endsWith(' ') ? ' ' : ''));
-      });
-      pdf.setFont('helvetica', 'normal');
-      y += 5.6;
+  };
+  const linha = (c, i) => {
+    if (y > 280) { novaPagina(); titulosColunas(); }
+    if (i % 2) { pdf.setFillColor(245, 245, 242); pdf.rect(10, y - 3.8, 190, 5.6, 'F'); }
+    pdf.setTextColor(40); pdf.setFont('helvetica', 'normal');
+    pdf.text(String(i + 1), cols[0].x, y);
+    if (comCpf) pdf.text(fmtCPF(c.cpf), xCpf, y);
+    if (comAniv) pdf.text(fmtNasc(c.nascimento), xAniv, y);
+    let x = cols[1].x;
+    partesNome(c.nome_completo, c.nome_guerra).forEach(([t, b]) => {
+      pdf.setFont('helvetica', b ? 'bold' : 'normal');
+      const resto = limNome - x;
+      if (resto <= 0) return;
+      const txt = pdf.splitTextToSize(t, resto)[0];
+      pdf.text(txt, x, y); x += pdf.getTextWidth(txt + (t.endsWith(' ') ? ' ' : ''));
     });
-    y += 5;
-  });
+    pdf.setFont('helvetica', 'normal');
+    y += 5.6;
+  };
+  cabecalho();
+  if (porCurso) {
+    CURSOS.forEach(cid => {
+      const membros = cadLista.filter(c => c.curso === cid);
+      if (!membros.length) return;
+      if (y > 262) novaPagina();
+      pdf.setFillColor(17, 17, 17); pdf.rect(10, y - 4.5, 190, 7, 'F');
+      pdf.setTextColor(255); pdf.setFont('helvetica', 'bold'); pdf.setFontSize(9);
+      pdf.text(`${NOMES[cid].toUpperCase()} (${membros.length})`, 12, y); y += 7;
+      titulosColunas();
+      membros.forEach(linha);
+      y += 5;
+    });
+  } else {
+    titulosColunas();
+    [...cadLista].sort((a, b) => a.nome_completo.localeCompare(b.nome_completo, 'pt-BR')).forEach(linha);
+  }
   rodape();
   pdf.save('cpor2006_cadastro.pdf');
 }
