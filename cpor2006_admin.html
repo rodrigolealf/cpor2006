@@ -415,6 +415,11 @@ textarea:focus{outline:none;border-color:#888}
         <input class="cad-busca" id="cad-busca" placeholder="Buscar nome, guerra ou CPF" oninput="renderCadastro()" style="flex:1;min-width:180px">
         <button class="btn" onclick="carregarCadastros()">🔄 Atualizar</button>
         <button class="btn" onclick="salvarCadastroPDF()">📄 Lista completa PDF</button>
+        <select id="pdf-grupo" style="padding:5px 8px;border:1px solid #ddd;border-radius:16px;font-size:11px;font-weight:600">
+          <option value="confirmados">Confirmados</option>
+          <option value="faltantes">Faltantes</option>
+          <option value="total">Efetivo total</option>
+        </select>
         <span class="cad-campos" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:12px;font-weight:600">
           <label><input type="checkbox" checked disabled> Nome</label>
           <label><input type="checkbox" id="pdf-curso" checked> Curso</label>
@@ -1916,8 +1921,13 @@ function salvarCadastroCSV() {
   link.click();
 }
 
+function pessoaDoCad(c) { return state.pessoas.find(x => x.id === c.pessoa_id); }
+
 function salvarCadastroPDF() {
   if (!cadLista) return;
+  const grupo = document.getElementById('pdf-grupo').value;
+  const lista = cadLista.filter(c => grupo === 'total' || (grupo === 'faltantes' ? !!(pessoaDoCad(c) || {}).faltante : confirmadoCad(c)));
+  const rotulo = { confirmados: 'confirmados', faltantes: 'faltantes', total: 'efetivo total' }[grupo];
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF('p', 'mm', 'a4');
   const logo = document.querySelector('.top-bar img.logo');
@@ -1938,9 +1948,9 @@ function salvarCadastroPDF() {
     pdf.setFillColor(26, 35, 50); pdf.rect(0, 0, 210, 26, 'F');
     if (logo) try { pdf.addImage(logo.src, 'JPEG', 10, 3, 17, 20); } catch (e) {}
     pdf.setTextColor(255); pdf.setFont('helvetica', 'bold'); pdf.setFontSize(15);
-    pdf.text('Cadastro de Combatentes', 32, 12);
+    pdf.text('Cadastro de Combatentes — ' + rotulo.charAt(0).toUpperCase() + rotulo.slice(1), 32, 12);
     pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9);
-    pdf.text(`CPOR Recife · Turma 2006 · ${cadLista.length} cadastrados`, 32, 19);
+    pdf.text(`CPOR Recife · Turma 2006 · ${lista.length} ${rotulo}`, 32, 19);
     y = 34;
   };
   const novaPagina = () => { rodape(); pdf.addPage(); pag++; cabecalho(); };
@@ -1970,7 +1980,7 @@ function salvarCadastroPDF() {
   cabecalho();
   if (porCurso) {
     CURSOS.forEach(cid => {
-      const membros = cadLista.filter(c => c.curso === cid);
+      const membros = lista.filter(c => c.curso === cid);
       if (!membros.length) return;
       if (y > 262) novaPagina();
       pdf.setFillColor(17, 17, 17); pdf.rect(10, y - 4.5, 190, 7, 'F');
@@ -1982,10 +1992,10 @@ function salvarCadastroPDF() {
     });
   } else {
     titulosColunas();
-    [...cadLista].sort((a, b) => a.nome_completo.localeCompare(b.nome_completo, 'pt-BR')).forEach(linha);
+    [...lista].sort((a, b) => a.nome_completo.localeCompare(b.nome_completo, 'pt-BR')).forEach(linha);
   }
   rodape();
-  pdf.save('cpor2006_cadastro.pdf');
+  pdf.save(`cpor2006_cadastro_${grupo}.pdf`);
 }
 
 loadData().catch(e => {
