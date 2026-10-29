@@ -550,7 +550,7 @@ async function loadData() {
   renderAll();
 }
 
-function fmtBRL(v) { return 'R$ ' + Math.round(v).toLocaleString('pt-BR'); }
+function fmtBRL(v) { return 'R$ ' + (v || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
 function fmtBRLInput(v) { return 'R$ ' + (v||0).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}); }
 function maskMoneyInput(el) {
   let digits = el.value.replace(/\D/g, '').replace(/^0+(?=\d)/, '');

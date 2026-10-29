@@ -191,7 +191,7 @@ async function loadData() {
   renderAll();
 }
 
-function fmtBRL(v) { return 'R$ ' + Math.round(v).toLocaleString('pt-BR'); }
+function fmtBRL(v) { return 'R$ ' + (v || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
 function fmtBRLc(v) { return 'R$ ' + (v || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
 function totalArr()   { return state.pessoas.reduce((a,p) => a+p.pago, 0); }
 function totalCusto() { return state.custos.reduce((a,c)  => a+c.qtd*c.unit, 0); }
