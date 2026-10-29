@@ -192,6 +192,7 @@ async function loadData() {
 }
 
 function fmtBRL(v) { return 'R$ ' + Math.round(v).toLocaleString('pt-BR'); }
+function fmtBRLc(v) { return 'R$ ' + (v || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
 function totalArr()   { return state.pessoas.reduce((a,p) => a+p.pago, 0); }
 function totalCusto() { return state.custos.reduce((a,c)  => a+c.qtd*c.unit, 0); }
 function sortPessoas(lista) {
@@ -302,14 +303,14 @@ function renderCustosView() {
     return `<tr>
       <td style="font-weight:500">${c.nome}</td>
       <td style="color:#888">${c.qtd||'-'}</td>
-      <td style="color:#888">${c.unit>0?fmtBRL(c.unit):'-'}</td>
-      <td>${total>0?fmtBRL(total):'-'}</td>
-      <td style="color:${c.pago>0?'#16a34a':'#ccc'}">${c.pago>0?fmtBRL(c.pago):'-'}</td>
+      <td style="color:#888">${c.unit>0?fmtBRLc(c.unit):'-'}</td>
+      <td>${total>0?fmtBRLc(total):'-'}</td>
+      <td style="color:${c.pago>0?'#16a34a':'#ccc'}">${c.pago>0?fmtBRLc(c.pago):'-'}</td>
     </tr>`;
   }).join('');
   const saldo = totalArr() - totalCusto();
   const el = document.getElementById('saldo-view');
-  if (el) { el.textContent = fmtBRL(saldo); el.style.color = saldo>=0?'#16a34a':'#dc2626'; }
+  if (el) { el.textContent = fmtBRLc(saldo); el.style.color = saldo>=0?'#16a34a':'#dc2626'; }
 }
 
 function renderView() {

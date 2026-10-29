@@ -742,16 +742,16 @@ function renderCustosView() {
     return `<tr>
       <td style="font-weight:500">${c.nome}</td>
       <td style="color:#888">${c.qtd||'-'}</td>
-      <td style="color:#888">${c.unit>0?fmtBRL(c.unit):'-'}</td>
-      <td>${total>0?fmtBRL(total):'-'}</td>
-      <td style="color:${c.pago>0?'#16a34a':'#ccc'}">${c.pago>0?fmtBRL(c.pago):'-'}</td>
+      <td style="color:#888">${c.unit>0?fmtBRLc(c.unit):'-'}</td>
+      <td>${total>0?fmtBRLc(total):'-'}</td>
+      <td style="color:${c.pago>0?'#16a34a':'#ccc'}">${c.pago>0?fmtBRLc(c.pago):'-'}</td>
     </tr>`;
   }).join('');
   const fa = document.getElementById('custos-falt-alerta');
   if (fa) fa.innerHTML = alertaFaltantesHTML();
   const saldo = totalArr() - totalCusto();
   const el = document.getElementById('saldo-view');
-  if (el) { el.textContent = fmtBRL(saldo); el.style.color = saldo>=0?'#16a34a':'#dc2626'; }
+  if (el) { el.textContent = fmtBRLc(saldo); el.style.color = saldo>=0?'#16a34a':'#dc2626'; }
 }
 
 function renderView() {
@@ -839,7 +839,7 @@ function renderSimulacao() {
       <td><input type="text" class="sim-nome-in" value="${it.nome}" style="width:100%;border:1px solid #ddd;border-radius:4px;padding:3px 6px;font-size:12px;${it.ativo?'':'text-decoration:line-through'}" oninput="previewSimItem('${it.id}')"></td>
       <td style="text-align:center"><input type="checkbox" ${it.por_pessoa?'checked':''} ${it.ativo?'':'disabled'} onchange="updateSimItem('${it.id}','por_pessoa',this.checked)"></td>
       <td style="font-size:11px;color:#888">${qtdUnitHTML}</td>
-      <td class="sim-total-cell" style="font-weight:600">${it.ativo ? fmtBRL(totalItem) : '—'}</td>
+      <td class="sim-total-cell" style="font-weight:600">${it.ativo ? fmtBRLc(totalItem) : '—'}</td>
       <td><button class="btn" style="padding:2px 6px;font-size:11px;color:#dc2626" onclick="removeSimItem('${it.id}')" title="Remover da simulação">✕</button></td>
     </tr>`;
   }).join('');
@@ -864,7 +864,7 @@ function previewSimItem(id) {
   const pessoasSim = inputEl ? (+inputEl.value || 0) : 0;
   const totalItem = it.ativo ? (it.por_pessoa ? pessoasSim * it.unit : it.qtd * it.unit) : 0;
   const totalCell = row.querySelector('.sim-total-cell');
-  if (totalCell) totalCell.textContent = it.ativo ? fmtBRL(totalItem) : '—';
+  if (totalCell) totalCell.textContent = it.ativo ? fmtBRLc(totalItem) : '—';
 
   atualizarResumoSimulacao();
   agendarSalvarSimulacao();
@@ -970,9 +970,9 @@ function renderCustos() {
       <td><input value="${c.nome}" onchange="updateCusto(${i},'nome',this.value)"></td>
       <td><input class="qtd-in" type="number" value="${c.qtd}" min="0" oninput="previewCusto(${i})" onchange="updateCusto(${i},'qtd',+this.value)"></td>
       <td><input class="unit-in" type="text" inputmode="numeric" value="${fmtBRLInput(c.unit||0)}" oninput="maskMoneyInput(this);previewCusto(${i})" onchange="updateCusto(${i},'unit',parseMoneyInput(this.value))"></td>
-      <td class="total-cell" style="font-size:12px;font-weight:500">${total>0?fmtBRL(total):'-'}</td>
+      <td class="total-cell" style="font-size:12px;font-weight:500">${total>0?fmtBRLc(total):'-'}</td>
       <td><input class="pago-in" type="text" inputmode="numeric" value="${fmtBRLInput(c.pago||0)}" oninput="maskMoneyInput(this);previewCusto(${i})" onchange="updateCusto(${i},'pago',parseMoneyInput(this.value))"></td>
-      <td class="restante-cell" style="font-size:12px;font-weight:600;color:${restante>0?'#dc2626':total>0?'#16a34a':'#aaa'}">${total>0?(restante>0?fmtBRL(restante):'✓ Pago'):'-'}</td>
+      <td class="restante-cell" style="font-size:12px;font-weight:600;color:${restante>0?'#dc2626':total>0?'#16a34a':'#aaa'}">${total>0?(restante>0?fmtBRLc(restante):'✓ Pago'):'-'}</td>
       <td><button class="btn" style="padding:2px 6px;font-size:11px;color:#dc2626" onclick="delCost(${i})">✕</button></td>
     </tr>`;
   }).join('');
@@ -993,7 +993,7 @@ function renderCustos() {
   const saldoPrevisto = (totalPrevistoReceber + sobra2025) - totalPrevisto; // se TODOS confirmados quitarem
 
   const el = document.getElementById('saldo-val');
-  if (el) { el.textContent = fmtBRL(saldoFinal); el.style.color = saldoFinal>=0?'#16a34a':'#dc2626'; }
+  if (el) { el.textContent = fmtBRLc(saldoFinal); el.style.color = saldoFinal>=0?'#16a34a':'#dc2626'; }
 
   const resumo = document.getElementById('custos-resumo');
   if (resumo) {
@@ -1059,9 +1059,9 @@ function previewCusto(idx) {
   const restante = Math.max(0, total - pago);
   const totalCell = row.querySelector('.total-cell');
   const restCell  = row.querySelector('.restante-cell');
-  if (totalCell) totalCell.textContent = total > 0 ? fmtBRL(total) : '-';
+  if (totalCell) totalCell.textContent = total > 0 ? fmtBRLc(total) : '-';
   if (restCell) {
-    restCell.textContent = total > 0 ? (restante > 0 ? fmtBRL(restante) : '✓ Pago') : '-';
+    restCell.textContent = total > 0 ? (restante > 0 ? fmtBRLc(restante) : '✓ Pago') : '-';
     restCell.style.color = restante > 0 ? '#dc2626' : (total > 0 ? '#16a34a' : '#aaa');
   }
 }
