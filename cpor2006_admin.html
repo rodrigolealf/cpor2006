@@ -1608,6 +1608,12 @@ function modoListaCad(m) {
   renderListaCad();
 }
 
+// Cadastro de quem está confirmado (pagou e não é faltante); quem se cadastrou e não vai fica de fora
+function confirmadoCad(c) {
+  const p = state.pessoas.find(x => x.id === c.pessoa_id);
+  return !!p && p.pago > 0 && !p.faltante;
+}
+
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
 function renderListaCad() {
@@ -1630,10 +1636,11 @@ function renderListaCad() {
   const caixas = CURSOS.map(cid => {
     let itens, cont;
     if (cadModo === 'cpf') {
-      const lista = cadLista.filter(c => c.curso === cid).sort((a, b) => ord(a.nome_completo, b.nome_completo));
+      // só confirmados: cadastro ligado a quem pagou e não está marcado como faltante
+      const lista = cadLista.filter(c => c.curso === cid && confirmadoCad(c)).sort((a, b) => ord(a.nome_completo, b.nome_completo));
       totOk += lista.length;
       itens = lista.map((c, i) => `<li><span class="n">${i + 1}.</span><span class="nm">${nomeHTML(c.nome_completo, c.nome_guerra)}</span><span class="cpf">${fmtCPF(c.cpf)}</span></li>`);
-      cont = `${lista.length} cadastrados`;
+      cont = `${lista.length} confirmados`;
     } else {
       const ok = cadLista.filter(c => c.curso === cid).map(c => c.nome_guerra).sort(ord);
       const pend = state.pessoas.filter(p => p.curso === cid && p.pago > 0 && !p.faltante && !ligados.has(p.id)).map(p => p.nome).sort(ord);
@@ -1652,9 +1659,9 @@ function renderListaCad() {
       <ul>${itens.join('')}</ul>
     </div>`;
   }).join('');
-  const titulo = cadModo === 'cpf' ? 'Cadastro de Combatentes — Nome e CPF' : 'Cadastro de Combatentes — Situação';
+  const titulo = cadModo === 'cpf' ? 'Combatentes Confirmados — Nome e CPF' : 'Cadastro de Combatentes — Situação';
   const total = cadModo === 'cpf'
-    ? `Total: <span class="num">${totOk}</span> combatentes cadastrados`
+    ? `Total: <span class="num">${totOk}</span> combatentes confirmados`
     : `<span class="num">${totOk}</span> cadastrados · <span style="color:#c4841a">${totPend}</span> pendentes`;
   pagina.innerHTML = `
     <div class="lista-pagina-titulo">${titulo} · CPOR Recife Turma 2006 · ${new Date().toLocaleDateString('pt-BR')}</div>
