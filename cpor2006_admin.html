@@ -1046,7 +1046,12 @@ async function updateCusto(idx, campo, valor) {
   const c = state.custos[idx];
   c[campo] = valor;
   renderCustos();
-  await supaFetch('custos', 'PATCH', {[campo]: valor}, `?id=eq.${c.id}`);
+  try {
+    await supaFetch('custos', 'PATCH', {[campo]: valor}, `?id=eq.${c.id}`);
+  } catch (e) {
+    console.error('updateCusto:', e);
+    alert('NÃO SALVOU: ' + c.nome + ' (' + campo + '). Atualize a página e confira os valores.\n\n' + e.message);
+  }
 }
 
 function previewCusto(idx) {
