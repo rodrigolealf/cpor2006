@@ -564,7 +564,7 @@ function parseMoneyInput(str) {
   return digits ? parseInt(digits, 10) / 100 : 0;
 }
 function totalArr()   { return state.pessoas.reduce((a,p) => a+p.pago, 0); }
-function totalCusto() { return state.custos.reduce((a,c)  => a+c.qtd*c.unit, 0); }
+function totalCusto() { return state.custos.reduce((a,c)  => a+Math.round(c.qtd*c.unit*100)/100, 0); }
 function sortPessoas(lista) {
   return [
     ...lista.filter(p => p.pago>=COTA),
@@ -738,7 +738,7 @@ function renderReceb() {
 function renderCustosView() {
   const tbody = document.getElementById('custos-view-body'); if (!tbody) return;
   tbody.innerHTML = state.custos.map(c => {
-    const total = c.qtd * c.unit;
+    const total = Math.round(c.qtd * c.unit * 100) / 100;
     return `<tr>
       <td style="font-weight:500">${c.nome}</td>
       <td style="color:#888">${c.qtd||'-'}</td>
@@ -963,8 +963,8 @@ async function processCmd() {
 function renderCustos() {
   const tbody = document.getElementById('cost-body'); if (!tbody) return;
   tbody.innerHTML = state.custos.map((c,i) => {
-    const total    = c.qtd * c.unit;
-    const restante = Math.max(0, total - (c.pago||0));
+    const total    = Math.round(c.qtd * c.unit * 100) / 100;
+    const restante = Math.max(0, Math.round((total - (c.pago||0)) * 100) / 100);
     const pagoOk   = (c.pago||0) >= total && total > 0;
     return `<tr data-row="${i}">
       <td><input value="${c.nome}" onchange="updateCusto(${i},'nome',this.value)"></td>
@@ -980,7 +980,7 @@ function renderCustos() {
   // Resumo financeiro completo
   const arrecadado   = totalArr();
   const sobra2025    = 952; // valor fixo
-  const totalPrevisto = state.custos.reduce((a,c) => a + c.qtd*c.unit, 0);
+  const totalPrevisto = state.custos.reduce((a,c) => a + Math.round(c.qtd*c.unit*100)/100, 0);
   const totalPago    = state.custos.reduce((a,c) => a + (c.pago||0), 0);
   const totalRestCustos = Math.max(0, totalPrevisto - totalPago);
   const saldoDisp    = arrecadado + sobra2025;           // o que temos
@@ -1060,8 +1060,8 @@ function previewCusto(idx) {
   const qtd  = +row.querySelector('.qtd-in').value || 0;
   const unit = parseMoneyInput(row.querySelector('.unit-in').value);
   const pago = parseMoneyInput(row.querySelector('.pago-in').value);
-  const total    = qtd * unit;
-  const restante = Math.max(0, total - pago);
+  const total    = Math.round(qtd * unit * 100) / 100;
+  const restante = Math.max(0, Math.round((total - pago) * 100) / 100);
   const totalCell = row.querySelector('.total-cell');
   const restCell  = row.querySelector('.restante-cell');
   if (totalCell) totalCell.textContent = total > 0 ? fmtBRLc(total) : '-';

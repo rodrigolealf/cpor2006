@@ -194,7 +194,7 @@ async function loadData() {
 function fmtBRL(v) { return 'R$ ' + (v || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
 function fmtBRLc(v) { return 'R$ ' + (v || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
 function totalArr()   { return state.pessoas.reduce((a,p) => a+p.pago, 0); }
-function totalCusto() { return state.custos.reduce((a,c)  => a+c.qtd*c.unit, 0); }
+function totalCusto() { return state.custos.reduce((a,c)  => a+Math.round(c.qtd*c.unit*100)/100, 0); }
 function sortPessoas(lista) {
   return [
     ...lista.filter(p => p.pago>=COTA),
@@ -299,7 +299,7 @@ function renderReceb() {
 function renderCustosView() {
   const tbody = document.getElementById('custos-view-body'); if (!tbody) return;
   tbody.innerHTML = state.custos.map(c => {
-    const total = c.qtd * c.unit;
+    const total = Math.round(c.qtd * c.unit * 100) / 100;
     return `<tr>
       <td style="font-weight:500">${c.nome}</td>
       <td style="color:#888">${c.qtd||'-'}</td>
