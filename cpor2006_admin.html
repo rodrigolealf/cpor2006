@@ -236,6 +236,17 @@ textarea:focus{outline:none;border-color:#888}
 .ob-names span{font-size:14px;font-weight:700;display:flex;align-items:center;gap:6px;white-space:nowrap}
 .ob-names span:before{content:"🚌";font-size:12px}
 .ob-vazio{background:#fff;border-radius:6px;margin-top:6px;padding:20px;text-align:center;color:#888;font-size:13px}
+.bal-tbl{width:100%;border-collapse:collapse;font-size:12px}
+.bal-tbl th{font-size:9px;font-weight:700;letter-spacing:1px;color:#6a6a63;text-align:right;padding:6px 10px;border-bottom:1px solid #e3e0d8}
+.bal-tbl th:first-child,.bal-tbl td:first-child{text-align:left}
+.bal-tbl td{padding:5px 10px;text-align:right;border-bottom:.5px solid #eeece5;font-weight:600}
+.bal-tbl td:first-child{font-weight:700}
+.bal-tbl tr.tot td{border-top:2px solid #1a2332;border-bottom:none;font-weight:800;font-size:13px}
+.bal-tbl .ok{color:#2d7a3f}.bal-tbl .pd{color:#c4841a}.bal-tbl .rd{color:#dc2626}.bal-tbl .mu{color:#b5b3aa}
+.bal-pend{padding:8px 14px 10px}
+.bal-pend div{display:flex;gap:10px;align-items:baseline;font-size:13px;font-weight:700;padding:3px 0;border-bottom:.5px solid #eeece5}
+.bal-pend div span.f{flex:1}.bal-pend div span.m{color:#b45309;font-size:11px;font-weight:700}
+.bal-pend div span.v{color:#6a6a63;font-size:12px}
 .ob-foot{text-align:center;font-size:9px;color:#a8a89f;margin-top:6px}
 .ob-edit{margin-top:14px;border:1px solid #e0e0e0;border-radius:10px;background:#fafafa}
 .ob-edit>summary{cursor:pointer;padding:11px 14px;font-size:13px;font-weight:600}
@@ -288,14 +299,23 @@ textarea:focus{outline:none;border-color:#888}
   <p class="sect-label">Custos</p>
   <table class="cost-tbl">
     <thead><tr>
-      <th style="width:28%">Fornecedor</th><th style="width:9%">Qtd</th>
-      <th style="width:13%">Unit.</th><th style="width:13%">Total prev.</th>
-      <th style="width:13%">Pago</th><th style="width:13%">Restante</th><th style="width:8%"></th>
+      <th style="width:22%">Fornecedor</th><th style="width:7%">Qtd</th>
+      <th style="width:12%">Unit.</th><th style="width:12%">Total prev.</th>
+      <th style="width:12%">Pago</th><th style="width:11%">Restante</th>
+      <th style="width:7%;text-align:center" title="Nota fiscal recebida">Nota</th><th style="width:8%;text-align:center" title="Comprovante de pagamento recebido">Compr.</th><th style="width:6%"></th>
     </tr></thead>
     <tbody id="cost-body"></tbody>
   </table>
   <button class="btn" style="margin-top:8px;font-size:12px" onclick="addCostItem()">+ Item</button>
   <div id="custos-resumo"></div>
+  <p class="sect-label" style="margin-top:18px">Balanço geral</p>
+  <div class="ob-actions">
+    <button class="btn" onclick="salvarBalanco('png')">🖼️ Balanço (imagem)</button>
+    <button class="btn" onclick="salvarBalanco('pdf')">📄 Balanço (PDF)</button>
+  </div>
+  <div class="ob-scroll" id="balanco-box" style="margin-bottom:12px">
+    <div class="ob-page" id="balanco-pagina"></div>
+  </div>
   <div class="saldo-box" style="display:none">
     <span id="saldo-val">R$ 0</span>
   </div>
@@ -580,6 +600,7 @@ function switchTab(t, btn) {
   document.getElementById('tab-'+t).classList.add('active');
   btn.classList.add('active');
   renderView();
+  if (t === 'custos') ajustarPreviewPagina('balanco-box', 'balanco-pagina');
 }
 
 function updateSaldoTotal() {
@@ -973,9 +994,12 @@ function renderCustos() {
       <td class="total-cell" style="font-size:12px;font-weight:500">${total>0?fmtBRLc(total):'-'}</td>
       <td><input class="pago-in" type="text" inputmode="numeric" value="${fmtBRLInput(c.pago||0)}" oninput="maskMoneyInput(this);previewCusto(${i})" onchange="updateCusto(${i},'pago',parseMoneyInput(this.value))"></td>
       <td class="restante-cell" style="font-size:12px;font-weight:600;color:${restante>0?'#dc2626':total>0?'#16a34a':'#aaa'}">${total>0?(restante>0?fmtBRLc(restante):'✓ Pago'):'-'}</td>
+      <td style="text-align:center"><input type="checkbox" style="width:auto" ${c.nota?'checked':''} onchange="updateCusto(${i},'nota',this.checked)"></td>
+      <td style="text-align:center"><input type="checkbox" style="width:auto" ${c.comprovante?'checked':''} onchange="updateCusto(${i},'comprovante',this.checked)"></td>
       <td><button class="btn" style="padding:2px 6px;font-size:11px;color:#dc2626" onclick="delCost(${i})">✕</button></td>
     </tr>`;
   }).join('');
+  renderBalanco();
 
   // Resumo financeiro completo
   const arrecadado   = totalArr();
@@ -1072,7 +1096,7 @@ function previewCusto(idx) {
 }
 
 async function addCostItem() {
-  const res = await supaFetch('custos', 'POST', {nome:'Novo item', qtd:0, unit:0, pago:0});
+  const res = await supaFetch('custos', 'POST', {nome:'Novo item', qtd:0, unit:0, pago:0, nota:false, comprovante:false});
   if (res && res[0]) state.custos.push(res[0]);
   else state.custos.push({nome:'Novo item', qtd:0, unit:0, pago:0});
   renderCustos();
@@ -2001,6 +2025,85 @@ function salvarCadastroPDF() {
   }
   rodape();
   pdf.save(`cpor2006_cadastro_${grupo}.pdf`);
+}
+
+
+// Balanço geral do comitê: arrecadado, gastos e notas/comprovantes que faltam
+function renderBalanco() {
+  const pagina = document.getElementById('balanco-pagina'); if (!pagina) return;
+  const logo = document.querySelector('.top-bar img.logo');
+  const r2 = v => Math.round(v * 100) / 100;
+  const SOBRA = 952;
+  const arrec = totalArr();
+  const quit = state.pessoas.filter(p => p.pago >= COTA).length;
+  const parc = state.pessoas.filter(p => p.pago > 0 && p.pago < COTA).length;
+  const itens = state.custos.map(c => ({ ...c, total: r2(c.qtd * c.unit), pagoV: c.pago || 0 }));
+  const totPrev = r2(itens.reduce((a, c) => a + c.total, 0));
+  const totPago = r2(itens.reduce((a, c) => a + c.pagoV, 0));
+  const aPagar = Math.max(0, r2(totPrev - totPago));
+  const caixa = r2(arrec + SOBRA - totPago);
+  const semNota = itens.filter(c => c.pagoV > 0 && !c.nota);
+  const semComp = itens.filter(c => c.pagoV > 0 && !c.comprovante);
+  const pend = itens.filter(c => c.pagoV > 0 && (!c.nota || !c.comprovante));
+  const marca = (ok, pago) => !pago ? '<span class="mu">—</span>' : ok ? '<span class="ok">✅</span>' : '<span class="pd">⏳</span>';
+  const linhas = itens.map(c => {
+    const rest = Math.max(0, r2(c.total - c.pagoV));
+    return `<tr><td>${escCad(c.nome)}</td><td>${fmtBRLc(c.total)}</td><td class="ok">${c.pagoV > 0 ? fmtBRLc(c.pagoV) : '—'}</td>
+      <td class="${rest > 0 ? 'rd' : 'ok'}">${rest > 0 ? fmtBRLc(rest) : '✓ Pago'}</td><td style="text-align:center">${marca(c.nota, c.pagoV > 0)}</td><td style="text-align:center">${marca(c.comprovante, c.pagoV > 0)}</td></tr>`;
+  }).join('');
+  const agora = new Date();
+  const dtStr = agora.toLocaleDateString('pt-BR') + ' às ' + agora.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+  const bloco = (titulo, corpo) => `<div class="ob-course"><div class="ob-cbar"><div class="ob-cname">${titulo}</div></div>${corpo}</div>`;
+  pagina.innerHTML = `
+    <div class="ob-hd">
+      ${logo ? `<img src="${logo.src}" alt="CPOR">` : ''}
+      <div><h1>Balanço Geral — Comitê de Organização</h1><div class="sub">CPOR Recife · Turma 2006 · Churrasco 20 Anos</div></div>
+    </div>
+    <div class="cad-resumo">
+      <div><div class="l">ARRECADADO</div><div class="v">${fmtBRLc(arrec)}</div></div>
+      <div class="t"><div class="l">SOBRA 2025</div><div class="v">${fmtBRLc(SOBRA)}</div></div>
+      <div class="p"><div class="l">JÁ PAGO EM CUSTOS</div><div class="v">${fmtBRLc(totPago)}</div></div>
+      <div style="border-left-color:${caixa >= 0 ? '#2d7a3f' : '#dc2626'}"><div class="l">SALDO EM CAIXA</div><div class="v" style="color:${caixa >= 0 ? '#2d7a3f' : '#dc2626'}">${fmtBRLc(caixa)}</div></div>
+    </div>
+    ${bloco('ARRECADAÇÃO', `<table class="bal-tbl"><tbody>
+      <tr><td>Combatentes confirmados</td><td>${quit + parc}</td></tr>
+      <tr><td>Cotas quitadas (R$ ${COTA})</td><td>${quit}</td></tr>
+      <tr><td>Pagamentos parciais</td><td>${parc}</td></tr>
+      <tr><td>Falta receber das cotas confirmadas</td><td class="pd">${fmtBRLc(Math.max(0, (quit + parc) * COTA - arrec))}</td></tr>
+      <tr class="tot"><td>Total arrecadado em 2026</td><td class="ok">${fmtBRLc(arrec)}</td></tr></tbody></table>`)}
+    ${bloco('GASTOS', `<table class="bal-tbl"><thead><tr><th>FORNECEDOR</th><th>PREVISTO</th><th>PAGO</th><th>RESTANTE</th><th style="text-align:center">NOTA</th><th style="text-align:center">COMPR.</th></tr></thead><tbody>${linhas}
+      <tr class="tot"><td>TOTAL</td><td>${fmtBRLc(totPrev)}</td><td class="ok">${fmtBRLc(totPago)}</td><td class="${aPagar > 0 ? 'rd' : 'ok'}">${fmtBRLc(aPagar)}</td><td></td><td></td></tr></tbody></table>`)}
+    ${bloco(`NOTAS E COMPROVANTES QUE FALTAM (${pend.length})`, pend.length
+      ? `<div class="bal-pend">${pend.map(c => `<div><span class="f">${escCad(c.nome)}</span><span class="m">${[!c.nota && 'SEM NOTA', !c.comprovante && 'SEM COMPROVANTE'].filter(Boolean).join(' · ')}</span><span class="v">pago ${fmtBRLc(c.pagoV)}</span></div>`).join('')}</div>`
+      : '<div class="bal-pend"><div><span class="f" style="color:#2d7a3f">✅ Todos os pagamentos têm nota e comprovante.</span></div></div>')}
+    <div class="ob-foot">Pendências: ${semNota.length} sem nota · ${semComp.length} sem comprovante · Atualizado em ${dtStr}</div>`;
+  ajustarPreviewPagina('balanco-box', 'balanco-pagina');
+}
+
+async function salvarBalanco(tipo) {
+  renderBalanco();
+  const canvas = await capturarPagina('balanco-pagina', escalaSegura('balanco-pagina', 3));
+  if (tipo === 'png') {
+    const link = document.createElement('a');
+    link.download = 'cpor2006_balanco_geral.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    return;
+  }
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF('p', 'mm', 'a4');
+  const margem = 8, w = 210 - margem * 2;
+  const pxPorPagina = Math.floor(canvas.width * (297 - margem * 2) / w);
+  for (let y = 0, pag = 0; y < canvas.height; y += pxPorPagina, pag++) {
+    const fatia = document.createElement('canvas');
+    fatia.width = canvas.width; fatia.height = Math.min(pxPorPagina, canvas.height - y);
+    const ctx = fatia.getContext('2d');
+    ctx.fillStyle = '#f4f4f2'; ctx.fillRect(0, 0, fatia.width, fatia.height);
+    ctx.drawImage(canvas, 0, y, fatia.width, fatia.height, 0, 0, fatia.width, fatia.height);
+    if (pag) pdf.addPage();
+    pdf.addImage(fatia.toDataURL('image/png'), 'PNG', margem, margem, w, fatia.height * w / fatia.width);
+  }
+  pdf.save('cpor2006_balanco_geral.pdf');
 }
 
 loadData().catch(e => {
